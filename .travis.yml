@@ -1,16 +1,18 @@
+sudo: required
 language: node_js
-
+node_js:
+- node
+services:
+- docker
+before_install:
+- openssl aes-256-cbc -K $encrypted_08b7173a07c2_key -iv $encrypted_08b7173a07c2_iv
+  -in sheets.googleapis.com-nodejs-pwmetrics.json.enc -out .credentials/sheets.googleapis.com-nodejs-pwmetrics.json
+  -d
+- export HOMEPATH=$(pwd)
+- docker pull justinribeiro/chrome-headless
+- docker run -d --net host justinribeiro/chrome-headless
+- docker ps -a
 install:
-  - npm install
-
-before_script:
-  - export DISPLAY=:99.0
-  - export LIGHTHOUSE_CHROMIUM_PATH="$(pwd)/chrome-linux/chrome"
-  - sh -e /etc/init.d/xvfb start
-  - curl -L https://raw.githubusercontent.com/GoogleChrome/lighthouse/v2.1.0/lighthouse-core/scripts/download-chrome.sh | bash
-
+- npm install
 script:
-  - 'npm start'
-
-notifications:
-  email: false
+- HOME=$(pwd) npm start
