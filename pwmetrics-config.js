@@ -30,37 +30,56 @@ module.exports = {
     view: (process.env.FLAGS_VIEW === 'true'), // open uploaded traces to Google Drive in DevTools
     // Note: pwmetrics supports all flags from Lighthouse
   },
-  //   expectations: {
-  //     // these expectations values are examples, for your cases set your own
-  //     // it's not required to use all metrics, you can use just a few of them
-  //     // Read _Available metrics_ where all keys are defined
-  //     ttfcp: {
-  //       warn: '>=1500',
-  //       error: '>=2000'
-  //     },
-  //     ttfmp: {
-  //       warn: '>=2000',
-  //       error: '>=3000'
-  //     },
-  //     // fv: {
-  //     //   ...
-  //     // },
-  //     // psi: {
-  //     //   ...
-  //     // },
-  //     // vc85: {
-  //     //   ...
-  //     // },
-  //     // vs100: {
-  //     //   ...
-  //     // },
-  //     // ttfi: {
-  //     //   ...
-  //     // },
-  //     // ttci: {
-  //     //   ...
-  //     // }
-  //   },
+    expectations: {
+      // Read https://github.com/paulirish/pwmetrics/#available-metrics for info about metrics
+
+      // Time To First Contentful Paint
+      ttfcp: {
+        warn: '>=1500',
+        error: '>=2500'
+      },
+      
+      // Time To First Meaningful Paint
+      ttfmp: {
+        warn: '>=2000',
+        error: '>=3000'
+      },
+
+      // Perceptual Speed Index
+      psi: {
+        warn: '>=7000',
+        error: '>=8500'
+      },
+
+      // First Visual (change)
+      fv: {
+        warn: '>=2000',
+        error: '>=3500'
+      },
+
+      // Visually Complete 100%
+      vc100: {
+        warn: '>=7000',
+        error: '>=9500'
+      },
+
+      // Visually Complete 85%
+      vc85: {
+        warn: '>=6000',
+        error: '>=8500'
+      },
+
+      // Time To First Interactive
+      ttfi: {
+        warn: '>=9000',
+        error: '>=12000'
+      },
+
+      // Time To Consistently Interactive
+      // ttci: {
+      //   ...
+      // }
+    },
   sheets: {
     options: {
       spreadsheetId: process.env.SHEETS_OPTIONS_SPREADSHEET_ID,
