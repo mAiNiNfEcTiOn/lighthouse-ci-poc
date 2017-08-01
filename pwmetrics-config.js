@@ -70,10 +70,10 @@ module.exports = {
       },
 
       // Time To First Interactive
-      ttfi: {
-        warn: '>=9000',
-        error: '>=12000'
-      },
+      // ttfi: {
+      //   warn: '>=9000',
+      //   error: '>=12000'
+      // },
 
       // Time To Consistently Interactive
       // ttci: {
