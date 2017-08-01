@@ -58,7 +58,7 @@ module.exports = {
       },
 
       // Visually Complete 100%
-      vc100: {
+      vc: {
         warn: '>=7000',
         error: '>=9500'
       },
