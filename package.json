@@ -1,0 +1,28 @@
+{
+  "name": "lighthouse-ci-poc",
+  "version": "1.0.0",
+  "description": "Attempt to make a Lighthouse CI configurable",
+  "main": "index.js",
+  "scripts": {
+    "start": "pwmetrics --config=./pwmetrics-config.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mAiNiNfEcTiOn/lighthouse-ci-poc.git"
+  },
+  "keywords": [
+    "Lighthouse",
+    "CI",
+    "pwmetrics"
+  ],
+  "author": "Ricardo Machado <pt.n00b@gmail.com>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/mAiNiNfEcTiOn/lighthouse-ci-poc/issues"
+  },
+  "homepage": "https://github.com/mAiNiNfEcTiOn/lighthouse-ci-poc#readme",
+  "dependencies": {
+    "pwmetrics": "^3.1.1"
+  }
+}

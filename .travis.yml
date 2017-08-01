@@ -1,0 +1,17 @@
+sudo: required
+language: node_js
+node_js:
+- node
+services:
+- docker
+before_install:
+- openssl aes-256-cbc -K $encrypted_08b7173a07c2_key -iv $encrypted_08b7173a07c2_iv
+  -in sheets.googleapis.com-nodejs-pwmetrics.json.enc -out .credentials/sheets.googleapis.com-nodejs-pwmetrics.json
+  -d
+- docker pull justinribeiro/chrome-headless
+- docker run -d --net host justinribeiro/chrome-headless
+- docker ps -a
+install:
+- npm install
+script:
+- HOME=$(pwd) npm start
