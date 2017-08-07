@@ -29,7 +29,7 @@ lighthouse(targetURL, lighthouseOptions, perfConfig)
     return {
       website: targetURL,
       build_id: process.env.BUILD_ID || 'none',
-      build_system: TRAVIS_BUILD_SYSTEM || 'none',
+      build_system: process.env.BUILD_SYSTEM || 'none',
       timestamp: metricTimestamp,
       metrics: metrics.timings
         .filter(({ timestamp }) => Boolean(timestamp))
