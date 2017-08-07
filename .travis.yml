@@ -6,6 +6,8 @@ services:
 - docker
 before_install:
 - openssl aes-256-cbc -K $encrypted_08b7173a07c2_key -iv $encrypted_08b7173a07c2_iv
+  -in client_secret.json.enc -out client_secret.json -d
+- openssl aes-256-cbc -K $encrypted_08b7173a07c2_key -iv $encrypted_08b7173a07c2_iv
   -in sheets.googleapis.com-nodejs-pwmetrics.json.enc -out .credentials/sheets.googleapis.com-nodejs-pwmetrics.json
   -d
 - docker pull justinribeiro/chrome-headless
