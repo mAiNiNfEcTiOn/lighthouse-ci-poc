@@ -13,4 +13,4 @@ before_install:
 install:
 - npm install
 script:
-- BUILD_ID=$TRAVIS_BUILD_ID BUILD_SYSTEM=travisci HOME=$(pwd) npm start
+- BUILD_ID=$TRAVIS_BUILD_ID BUILD_SYSTEM=travisci npm start
