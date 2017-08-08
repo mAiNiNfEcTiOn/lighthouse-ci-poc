@@ -4,7 +4,7 @@
   "description": "Attempt to make a Lighthouse CI configurable",
   "main": "index.js",
   "scripts": {
-    "start": "pwmetrics --config=./pwmetrics-config.js",
+    "start": "node index.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
@@ -23,6 +23,7 @@
   },
   "homepage": "https://github.com/mAiNiNfEcTiOn/lighthouse-ci-poc#readme",
   "dependencies": {
+    "@google-cloud/bigquery": "^0.9.6",
     "pwmetrics": "^3.1.1"
   }
 }
