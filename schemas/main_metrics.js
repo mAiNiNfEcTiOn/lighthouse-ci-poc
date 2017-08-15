@@ -1,4 +1,4 @@
-const metrics = require('pwmetrics/lib/metrics');
+const pwmetrics = require('pwmetrics/lib/metrics');
 const schema = [
   {
     "mode": "REQUIRED",
@@ -50,7 +50,7 @@ const schema = [
 ];
 
 module.exports = function save(dataset, lighthouseRes) {
-  const metrics = metrics.prepareData(lighthouseRes);
+  const metrics = pwmetrics.prepareData(lighthouseRes);
   const timestamp = new Date(lighthouseRes.generatedTime).getTime();
 
   const data = {
@@ -62,7 +62,6 @@ module.exports = function save(dataset, lighthouseRes) {
     timestamp,
     website: lighthouseRes.url,
   };
-
 
   return dataset
     .table('main_metrics')

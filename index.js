@@ -31,7 +31,7 @@ lighthouse(targetURL, lighthouseOptions, perfConfig)
       const dataset = bigquery.dataset('perfmatters');
 
       return Promise.all([
-        // saveMainMetrics(dataset, res),
+        saveMainMetrics(dataset, res),
         saveFilmstrip(dataset, res),
       ]);
     }
