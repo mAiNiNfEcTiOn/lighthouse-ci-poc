@@ -1,4 +1,3 @@
-const pwmetrics = require('pwmetrics/lib/metrics');
 const schema = [
   {
     "mode": "REQUIRED",
@@ -22,17 +21,12 @@ const schema = [
   },
   {
     "mode": "REPEATED",
-    "name": "metrics",
+    "name": "screenshots",
     "type": "RECORD",
     "fields": [
       {
         "mode": "REQUIRED",
-        "name": "id",
-        "type": "STRING"
-      },
-      {
-        "mode": "REQUIRED",
-        "name": "title",
+        "name": "data",
         "type": "STRING"
       },
       {
@@ -50,20 +44,19 @@ const schema = [
 ];
 
 module.exports = function save(dataset, lighthouseRes) {
-  const metrics = pwmetrics.prepareData(lighthouseRes);
   const timestamp = new Date(lighthouseRes.generatedTime).getTime();
 
   const data = {
     build_id: process.env.BUILD_ID || 'none',
     build_system: process.env.BUILD_SYSTEM || 'none',
-    metrics: metrics.timings
-      .filter(({ timestamp }) => Boolean(timestamp))
-      .map(({ id, timing, title }) => ({ id, timestamp, timing, title })),
+    screenshots: lighthouseRes.reportCategories[0].audits
+      .find(item => (item.id === 'screenshot-thumbnails'))
+      .result.details.items.map(({ data, timing }) => ({ data, timestamp, timing })),
     timestamp,
     website: lighthouseRes.url,
   };
 
   return dataset
-    .table('main_metrics')
+    .table('filmstrip')
     .insert(data);
 }
