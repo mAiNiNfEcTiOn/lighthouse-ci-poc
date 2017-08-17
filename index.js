@@ -6,6 +6,7 @@ const util = require('util');
 
 const saveMainMetrics = require('./schemas/main_metrics');
 const saveFilmstrip = require('./schemas/filmstrip');
+const saveAssetsBlockingFmp = require('./schemas/assets_blocking_fmp');
 
 const lighthouseOptions = {
   loadPage: true,
@@ -31,8 +32,9 @@ lighthouse(targetURL, lighthouseOptions, perfConfig)
       const dataset = bigquery.dataset('perfmatters');
 
       return Promise.all([
-        saveMainMetrics(dataset, res),
+        saveAssetsBlockingFmp(dataset, res),
         saveFilmstrip(dataset, res),
+        saveMainMetrics(dataset, res),
       ]);
     }
   })
