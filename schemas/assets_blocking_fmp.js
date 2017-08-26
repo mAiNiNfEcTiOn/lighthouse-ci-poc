@@ -1,6 +1,8 @@
 const path = require('path');
 const URL = require('url');
 
+const debug = require('debug')('assets_blocking_fmp');
+
 const schema = [
   {
     "mode": "REQUIRED",
@@ -119,6 +121,8 @@ module.exports = function save(dataset, lighthouseRes) {
     totalLinksMs,
     website: lighthouseRes.url,
   };
+
+  debug(data);
 
   return dataset
     .table('assets_blocking_fmp')

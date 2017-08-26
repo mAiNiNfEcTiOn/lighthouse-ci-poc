@@ -1,3 +1,5 @@
+const debug = require('debug')('filmstrip');
+
 const schema = [
   {
     "mode": "REQUIRED",
@@ -55,6 +57,8 @@ module.exports = function save(dataset, lighthouseRes) {
     timestamp,
     website: lighthouseRes.url,
   };
+
+  debug(data);
 
   return dataset
     .table('filmstrip')
