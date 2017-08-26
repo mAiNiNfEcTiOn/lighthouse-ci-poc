@@ -10,7 +10,11 @@ const saveAssetsBlockingFmp = require('./schemas/assets_blocking_fmp');
 const saveDomSize = require('./schemas/dom_size');
 const saveFilmstrip = require('./schemas/filmstrip');
 const saveMainMetrics = require('./schemas/main_metrics');
+<<<<<<< HEAD
 const saveOffscreenImagesMetrics = require('./schemas/offscreen_images');
+=======
+const saveUserTimings = require('./schemas/user_timings');
+>>>>>>> Adds the usage of the newly created schema 'user_timings'. Also fixes the debug line of the lighthouse response
 
 const lighthouseOptions = {
   loadPage: true,
@@ -30,7 +34,7 @@ self.setImmediate = function(callback, ...argsForCallback) {
 
 lighthouse(targetURL, lighthouseOptions, perfConfig)
   .then((res) => {
-    debug('%o', util.inspect(res, true, null, true));
+    debug(util.inspect(res, true, null, true));
 
     if (process.env.BIGQUERY_PROJECT_ID) {
       const bigquery = new BigQuery({
@@ -45,6 +49,7 @@ lighthouse(targetURL, lighthouseOptions, perfConfig)
         saveFilmstrip(dataset, res),
         saveMainMetrics(dataset, res),
         saveOffscreenImagesMetrics(dataset, res),
+        saveUserTimings(dataset, res),
       ]);
     }
   })
