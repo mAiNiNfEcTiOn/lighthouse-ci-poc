@@ -10,6 +10,7 @@ const saveAssetsBlockingFmp = require('./schemas/assets_blocking_fmp');
 const saveDomSize = require('./schemas/dom_size');
 const saveFilmstrip = require('./schemas/filmstrip');
 const saveMainMetrics = require('./schemas/main_metrics');
+const saveOffscreenImagesMetrics = require('./schemas/offscreen_images');
 
 const lighthouseOptions = {
   loadPage: true,
@@ -43,6 +44,7 @@ lighthouse(targetURL, lighthouseOptions, perfConfig)
         saveDomSize(dataset, res),
         saveFilmstrip(dataset, res),
         saveMainMetrics(dataset, res),
+        saveOffscreenImagesMetrics(dataset, res),
       ]);
     }
   })
