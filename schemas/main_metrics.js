@@ -1,4 +1,7 @@
 const pwmetrics = require('pwmetrics/lib/metrics');
+
+const debug = require('debug')('main_metrics');
+
 const schema = [
   {
     "mode": "REQUIRED",
@@ -62,6 +65,8 @@ module.exports = function save(dataset, lighthouseRes) {
     timestamp,
     website: lighthouseRes.url,
   };
+
+  debug(data);
 
   return dataset
     .table('main_metrics')
