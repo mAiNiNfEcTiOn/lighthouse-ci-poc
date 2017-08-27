@@ -10,11 +10,8 @@ const saveAssetsBlockingFmp = require('./schemas/assets_blocking_fmp');
 const saveDomSize = require('./schemas/dom_size');
 const saveFilmstrip = require('./schemas/filmstrip');
 const saveMainMetrics = require('./schemas/main_metrics');
-<<<<<<< HEAD
 const saveOffscreenImagesMetrics = require('./schemas/offscreen_images');
-=======
 const saveUserTimings = require('./schemas/user_timings');
->>>>>>> Adds the usage of the newly created schema 'user_timings'. Also fixes the debug line of the lighthouse response
 
 const lighthouseOptions = {
   loadPage: true,
