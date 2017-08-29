@@ -1,7 +1,8 @@
 const path = require('path');
 const URL = require('url');
 
-const debug = require('debug')('offscreen_images');
+const logBasicInfo = require('debug')('offscreen_images:basic-info');
+const logExtInfo = require('debug')('offscreen_images:extended-info');
 
 const schema = [
   {
@@ -82,6 +83,8 @@ function processImagesList(imagesList) {
 }
 
 module.exports = function save(dataset, lighthouseRes) {
+  logBasicInfo('Gathering offscreen-images %s', lighthouseRes.url);
+
   const timestamp = new Date(lighthouseRes.generatedTime).getTime();
   
   const offscreenImagesAudit = lighthouseRes.reportCategories[0].audits.find(audit => audit.id === 'offscreen-images');
@@ -101,8 +104,9 @@ module.exports = function save(dataset, lighthouseRes) {
     website: lighthouseRes.url,
   };
 
-  debug(data);
+  logExtInfo(data);
   
+  logBasicInfo('Saving offscreen-images data from %s to BigQuery', lighthouseRes.url);
   return dataset
     .table('offscreen_images')
     .insert(data);

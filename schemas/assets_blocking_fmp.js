@@ -1,7 +1,8 @@
 const path = require('path');
 const URL = require('url');
 
-const debug = require('debug')('assets_blocking_fmp');
+const logBasicInfo = require('debug')('assets_blocking_fmp:basic-info');
+const logExtInfo = require('debug')('assets_blocking_fmp:extended-info');
 
 const schema = [
   {
@@ -90,6 +91,8 @@ function processAssetsList(assetsList) {
 }
 
 module.exports = function save(dataset, lighthouseRes) {
+  logBasicInfo('Gathering assets blocking First Meaningful Paint from %s', lighthouseRes.url);
+
   const timestamp = new Date(lighthouseRes.generatedTime).getTime();
   
   const { audits } = lighthouseRes.reportCategories[0];
@@ -122,8 +125,9 @@ module.exports = function save(dataset, lighthouseRes) {
     website: lighthouseRes.url,
   };
 
-  debug(data);
+  logExtInfo(data);
 
+  logBasicInfo('Saving assets blocking First Meaningful Paint from %s to BigQuery', lighthouseRes.url);
   return dataset
     .table('assets_blocking_fmp')
     .insert(data);
