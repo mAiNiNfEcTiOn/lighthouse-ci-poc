@@ -1,7 +1,8 @@
 const path = require('path');
 const URL = require('url');
 
-const debug = require('debug')('dom_size');
+const logBasicInfo = require('debug')('dom_size:basic-info');
+const logExtInfo = require('debug')('dom_size:extended-info');
 
 const schema = [
   {
@@ -76,6 +77,8 @@ function processMetricsList(metricsList) {
 }
 
 module.exports = function save(dataset, lighthouseRes) {
+  logBasicInfo('Gathering DOM Size data from %s', lighthouseRes.url);
+  
   const timestamp = new Date(lighthouseRes.generatedTime).getTime();
   
   const domSizeAudit = lighthouseRes.reportCategories[0].audits.find(audit => audit.id === 'dom-size');
@@ -93,8 +96,9 @@ module.exports = function save(dataset, lighthouseRes) {
     website: lighthouseRes.url,
   };
 
-  debug(data);
+  logExtInfo(data);
   
+  logBasicInfo('Saving DOM Size data from %s to BigQuery', lighthouseRes.url);
   return dataset
     .table('dom_size')
     .insert(data);

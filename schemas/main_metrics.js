@@ -1,6 +1,7 @@
 const pwmetrics = require('pwmetrics/lib/metrics');
 
-const debug = require('debug')('main_metrics');
+const logBasicInfo = require('debug')('main_metrics:basic-info');
+const logExtInfo = require('debug')('main_metrics:extended-info');
 
 const schema = [
   {
@@ -53,6 +54,8 @@ const schema = [
 ];
 
 module.exports = function save(dataset, lighthouseRes) {
+  logBasicInfo('Gathering main metrics from %s', lighthouseRes.url);
+
   const metrics = pwmetrics.prepareData(lighthouseRes);
   const timestamp = new Date(lighthouseRes.generatedTime).getTime();
 
@@ -66,8 +69,9 @@ module.exports = function save(dataset, lighthouseRes) {
     website: lighthouseRes.url,
   };
 
-  debug(data);
+  logExtInfo(data);
 
+  logBasicInfo('Saving main metrics from %s to BigQuery', lighthouseRes.url);
   return dataset
     .table('main_metrics')
     .insert(data);

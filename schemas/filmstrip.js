@@ -1,4 +1,5 @@
-const debug = require('debug')('filmstrip');
+const logBasicInfo = require('debug')('filmstrip:basic-info');
+const logExtInfo = require('debug')('filmstrip:extended-info');
 
 const schema = [
   {
@@ -46,6 +47,8 @@ const schema = [
 ];
 
 module.exports = function save(dataset, lighthouseRes) {
+  logBasicInfo('Gathering the filmstrip of %s loading process', lighthouseRes.url);
+
   const timestamp = new Date(lighthouseRes.generatedTime).getTime();
 
   const data = {
@@ -58,8 +61,9 @@ module.exports = function save(dataset, lighthouseRes) {
     website: lighthouseRes.url,
   };
 
-  debug(data);
+  logExtInfo(data);
 
+  logBasicInfo('Saving the filmstrip of %s loading process to BigQuery', lighthouseRes.url);
   return dataset
     .table('filmstrip')
     .insert(data);

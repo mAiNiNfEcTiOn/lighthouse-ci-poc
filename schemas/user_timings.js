@@ -1,7 +1,8 @@
 const path = require('path');
 const URL = require('url');
 
-const debug = require('debug')('user_timings');
+const logBasicInfo = require('debug')('user_timings:basic-info');
+const logExtInfo = require('debug')('user_timings:extended-info');
 
 const schema = [
   {
@@ -67,6 +68,8 @@ function processMetricsList(metricsList) {
 }
 
 module.exports = function save(dataset, lighthouseRes) {
+  logBasicInfo('Gathering User Timing metrics from %s', lighthouseRes.url);
+
   const timestamp = new Date(lighthouseRes.generatedTime).getTime();
   
   const userTimingsAudit = lighthouseRes.reportCategories[0].audits.find(audit => audit.id === 'user-timings');
@@ -81,8 +84,9 @@ module.exports = function save(dataset, lighthouseRes) {
     website: lighthouseRes.url,
   };
 
-  debug(data);
+  logExtInfo(data);
   
+  logBasicInfo('Saving User Timing metrics from %s to BigQuery', lighthouseRes.url);
   return dataset
     .table('user_timings')
     .insert(data);
