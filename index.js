@@ -39,6 +39,15 @@ const lighthouseOptions = {
   port: 9222,
 };
 
+/** @type {BigQuery} bigquery Connection to BigQuery */
+const bigquery = BIGQUERY_PROJECT_ID && new BigQuery({
+  keyFilename: CLIENT_SECRET_FILEPATH,
+  projectId: BIGQUERY_PROJECT_ID,
+});
+
+/** @type {Object} dataset BigQuery dataset. Passed to the schemas so that they can store data in BigQuery */
+const dataset = bigquery && bigquery.dataset(BIGQUERY_DATASET);
+
 /**
  * @see {@link https://github.com/GoogleChrome/lighthouse/issues/73#issuecomment-309159928}
  */
@@ -55,8 +64,9 @@ self.setImmediate = function(callback, ...argsForCallback) {
  * @return {Promise} Returns a Promise after all schemas' functions finish processing.
  */
 function storeMetrics(lighthouseRes) {
-  logBasicInfo('Finished measuring %s.', lighthouseRes.url);
-  logExtInfo(util.inspect(lighthouseRes, true, null, true));
+  if (!BIGQUERY_PROJECT_ID) {
+    return Promise.resolve();
+  }
 
   if (!(('generatedTime' in lighthouseRes) && lighthouseRes.generatedTime)) {
     return Promise.reject(new Error(`There was no "generatedTime" in Lighthouse's response`));
@@ -66,20 +76,8 @@ function storeMetrics(lighthouseRes) {
     return Promise.reject(new Error(`There were no "reportCategories" in Lighthouse's response`));
   }
 
-  if (!BIGQUERY_PROJECT_ID) {
-    return Promise.resolve();
-  }
 
   logBasicInfo('Now storing %s data in BigQuery', lighthouseRes.url);
-
-  /** @type {BigQuery} bigquery Connection to BigQuery */
-  const bigquery = new BigQuery({
-    keyFilename: CLIENT_SECRET_FILEPATH,
-    projectId: BIGQUERY_PROJECT_ID,
-  });
-
-  /** @type {Object} dataset BigQuery dataset. Passed to the schemas so that they can store data in BigQuery */
-  const dataset = bigquery.dataset(BIGQUERY_DATASET);
 
   return Promise.all([
     saveAssetsBlockingFmp(dataset, lighthouseRes),
@@ -106,6 +104,11 @@ function measureURL(url) {
   logBasicInfo('Starting to measure %s', url);
 
   return lighthouse(url, lighthouseOptions, perfConfig)
+    .then((lighthouseRes) => {
+      logBasicInfo('Finished measuring %s.', lighthouseRes.url);
+      logExtInfo(util.inspect(lighthouseRes, true, null, true));
+      return lighthouseRes;
+    })
     .then(storeMetrics)
     .catch((err) => {
       console.error(`${url} - `, util.inspect(err, true, null, true));
