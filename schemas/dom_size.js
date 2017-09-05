@@ -1,10 +1,7 @@
-const path = require('path');
-const URL = require('url');
-
 const logBasicInfo = require('debug')('dom_size:basic-info');
 const logExtInfo = require('debug')('dom_size:extended-info');
 
-const schema = [
+const schema = [ // eslint-disable-line
   {
     "mode": "REQUIRED",
     "name": "website",
@@ -61,12 +58,12 @@ const schema = [
 
 function processMetricsList(metricsList) {
   return metricsList
-    .filter((metric) => metric.title !== 'Total DOM Nodes')
+    .filter(metric => (metric.title !== 'Total DOM Nodes'))
     .map((metric) => {
       const { snippet, target, title, value } = metric;
       const metricValue = parseInt(value.replace(',', ''), 10);
       const metricTarget = parseInt(target.substr(2).replace(',', ''), 10);
-      
+
       return {
         metricName: title,
         metricSnippet: snippet,
@@ -78,13 +75,13 @@ function processMetricsList(metricsList) {
 
 module.exports = function save(dataset, lighthouseRes) {
   logBasicInfo('Gathering DOM Size data from %s', lighthouseRes.url);
-  
+
   const timestamp = new Date(lighthouseRes.generatedTime).getTime();
-  
+
   const domSizeAudit = lighthouseRes.reportCategories[0].audits.find(audit => audit.id === 'dom-size');
 
   const totalDOMNodes = domSizeAudit.result.rawValue;
-  
+
   const metrics = processMetricsList(domSizeAudit.result.extendedInfo.value);
 
   const data = {
@@ -97,9 +94,9 @@ module.exports = function save(dataset, lighthouseRes) {
   };
 
   logExtInfo(data);
-  
+
   logBasicInfo('Saving DOM Size data from %s to BigQuery', lighthouseRes.url);
   return dataset
     .table('dom_size')
     .insert(data);
-}
+};
