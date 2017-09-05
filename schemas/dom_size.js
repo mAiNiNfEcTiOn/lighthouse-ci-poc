@@ -100,7 +100,7 @@ module.exports = function save(dataset, lighthouseRes) {
 
   const totalDOMNodes = domSizeResult && domSizeResult.rawValue ? domSizeResult.rawValue : 0;
 
-  const metrics = domSizeExtInfoValue && domSizeExtInfoValue.length ? processMetricsList(domSizeResult) : [];
+  const metrics = domSizeExtInfoValue && domSizeExtInfoValue.length ? processMetricsList(domSizeExtInfoValue) : [];
 
   const data = {
     build_id: process.env.BUILD_ID || 'none',
