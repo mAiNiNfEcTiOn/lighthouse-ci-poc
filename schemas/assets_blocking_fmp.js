@@ -109,7 +109,6 @@ module.exports = function save(dataset, lighthouseRes) {
   const timestamp = new Date(lighthouseRes.generatedTime).getTime();
 
   const { audits } = lighthouseRes.reportCategories[0];
-
   if (!(audits && audits.length)) {
     return Promise.reject(new Error(`There were no "audits" in Lighthouse's reportCategories[0]`));
   }
@@ -143,7 +142,9 @@ module.exports = function save(dataset, lighthouseRes) {
     ? scriptsResults.reduce((result, item) => (result + parseFloat(item.totalKb)), 0)
     : 0;
 
-  const assets = [linksResults, scriptsResults].reduce((result, item) => result.concat(processAssetsList(item)), []);
+  const assets = [linksResults, scriptsResults]
+    .filter(Boolean)
+    .reduce((result, item) => result.concat(processAssetsList(item)), []);
 
   const data = {
     assets,
