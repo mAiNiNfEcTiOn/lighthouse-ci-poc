@@ -1,10 +1,7 @@
-const path = require('path');
-const URL = require('url');
-
 const logBasicInfo = require('debug')('user_timings:basic-info');
 const logExtInfo = require('debug')('user_timings:extended-info');
 
-const schema = [
+const schema = [ // eslint-disable-line
   {
     "mode": "REQUIRED",
     "name": "website",
@@ -54,6 +51,13 @@ const schema = [
   }
 ];
 
+/**
+ * From the metrics' list it generates an array of normalized objects to be stored in BigQuery
+ *
+ * @function processMetricsList
+ * @param {Array} metricsList
+ * @returns {Array}
+ */
 function processMetricsList(metricsList) {
   return metricsList
     .filter(metric => !metric.isMark)
@@ -71,10 +75,23 @@ module.exports = function save(dataset, lighthouseRes) {
   logBasicInfo('Gathering User Timing metrics from %s', lighthouseRes.url);
 
   const timestamp = new Date(lighthouseRes.generatedTime).getTime();
-  
-  const userTimingsAudit = lighthouseRes.reportCategories[0].audits.find(audit => audit.id === 'user-timings');
 
-  const metrics = processMetricsList(userTimingsAudit.result.extendedInfo.value);
+  const { audits } = lighthouseRes.reportCategories[0];
+  if (!(audits && audits.length)) {
+    return Promise.reject(new Error(`There were no "audits" in Lighthouse's reportCategories[0]`));
+  }
+
+  const userTimingsAudit = audits.find(audit => (audit.id === 'user-timings'));
+  const userTimingsValue = (
+    userTimingsAudit &&
+    userTimingsAudit.result &&
+    userTimingsAudit.result.extendedInfo &&
+    userTimingsAudit.result.extendedInfo.value
+  );
+
+  const metrics = userTimingsValue && userTimingsValue.length
+    ? processMetricsList(userTimingsValue)
+    : [];
 
   const data = {
     build_id: process.env.BUILD_ID || 'none',
@@ -85,9 +102,9 @@ module.exports = function save(dataset, lighthouseRes) {
   };
 
   logExtInfo(data);
-  
+
   logBasicInfo('Saving User Timing metrics from %s to BigQuery', lighthouseRes.url);
   return dataset
     .table('user_timings')
     .insert(data);
-}
+};
