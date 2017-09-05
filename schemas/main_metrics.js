@@ -3,7 +3,7 @@ const pwmetrics = require('pwmetrics/lib/metrics');
 const logBasicInfo = require('debug')('main_metrics:basic-info');
 const logExtInfo = require('debug')('main_metrics:extended-info');
 
-const schema = [
+const schema = [ // eslint-disable-line
   {
     "mode": "REQUIRED",
     "name": "website",
@@ -57,15 +57,15 @@ module.exports = function save(dataset, lighthouseRes) {
   logBasicInfo('Gathering main metrics from %s', lighthouseRes.url);
 
   const metrics = pwmetrics.prepareData(lighthouseRes);
-  const timestamp = new Date(lighthouseRes.generatedTime).getTime();
+  const lighthouseTimestamp = new Date(lighthouseRes.generatedTime).getTime();
 
   const data = {
     build_id: process.env.BUILD_ID || 'none',
     build_system: process.env.BUILD_SYSTEM || 'none',
     metrics: metrics.timings
       .filter(({ timestamp }) => Boolean(timestamp))
-      .map(({ id, timing, title }) => ({ id, timestamp, timing, title })),
-    timestamp,
+      .map(({ id, timing, title }) => ({ id, timestamp: lighthouseTimestamp, timing, title })),
+    timestamp: lighthouseTimestamp,
     website: lighthouseRes.url,
   };
 
@@ -75,4 +75,4 @@ module.exports = function save(dataset, lighthouseRes) {
   return dataset
     .table('main_metrics')
     .insert(data);
-}
+};
