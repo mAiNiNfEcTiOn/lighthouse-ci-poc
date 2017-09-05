@@ -56,6 +56,13 @@ const schema = [ // eslint-disable-line
   }
 ];
 
+/**
+ * From the metrics' list it generates an array of normalized objects to be stored in BigQuery
+ *
+ * @function processMetricsList
+ * @param {Array} metricsList
+ * @returns {Array}
+ */
 function processMetricsList(metricsList) {
   return metricsList
     .filter(metric => (metric.title !== 'Total DOM Nodes'))
@@ -78,11 +85,22 @@ module.exports = function save(dataset, lighthouseRes) {
 
   const timestamp = new Date(lighthouseRes.generatedTime).getTime();
 
-  const domSizeAudit = lighthouseRes.reportCategories[0].audits.find(audit => audit.id === 'dom-size');
+  const { audits } = lighthouseRes.reportCategories[0];
+  if (!(audits && audits.length)) {
+    return Promise.reject(new Error(`There were no "audits" in Lighthouse's reportCategories[0]`));
+  }
 
-  const totalDOMNodes = domSizeAudit.result.rawValue;
+  const domSizeAudit = audits.find(audit => (audit.id === 'dom-size'));
+  const domSizeResult = domSizeAudit && domSizeAudit.result;
+  const domSizeExtInfoValue = (
+    domSizeResult &&
+    domSizeResult.extendedInfo &&
+    domSizeResult.extendedInfo.value
+  );
 
-  const metrics = processMetricsList(domSizeAudit.result.extendedInfo.value);
+  const totalDOMNodes = domSizeResult && domSizeResult.rawValue ? domSizeResult.rawValue : 0;
+
+  const metrics = domSizeExtInfoValue && domSizeExtInfoValue.length ? processMetricsList(domSizeResult) : [];
 
   const data = {
     build_id: process.env.BUILD_ID || 'none',
