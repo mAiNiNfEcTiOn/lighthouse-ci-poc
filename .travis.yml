@@ -13,4 +13,5 @@ before_install:
 install:
 - npm install
 script:
+- npm run lint
 - BUILD_ID=$TRAVIS_BUILD_ID BUILD_SYSTEM=travisci npm start
