@@ -53,18 +53,31 @@ const schema = [ // eslint-disable-line
   }
 ];
 
+/**
+ * From the timings' list it generates an array of normalized objects to be stored in BigQuery
+ *
+ * @function processTimings
+ * @param {Array} timings
+ * @returns {Array}
+ */
+function processTimings(timings, lighthouseTimestamp) {
+  return timings
+    .filter(({ timestamp }) => Boolean(timestamp))
+    .map(({ id, timing, title }) => ({ id, timestamp: lighthouseTimestamp, timing, title }));
+}
+
 module.exports = function save(dataset, lighthouseRes) {
   logBasicInfo('Gathering main metrics from %s', lighthouseRes.url);
 
-  const metrics = pwmetrics.prepareData(lighthouseRes);
+  const { timings } = pwmetrics.prepareData(lighthouseRes);
   const lighthouseTimestamp = new Date(lighthouseRes.generatedTime).getTime();
+
+  const metrics = timings && timings.length ? processTimings(timings, lighthouseTimestamp) : [];
 
   const data = {
     build_id: process.env.BUILD_ID || 'none',
     build_system: process.env.BUILD_SYSTEM || 'none',
-    metrics: metrics.timings
-      .filter(({ timestamp }) => Boolean(timestamp))
-      .map(({ id, timing, title }) => ({ id, timestamp: lighthouseTimestamp, timing, title })),
+    metrics,
     timestamp: lighthouseTimestamp,
     website: lighthouseRes.url,
   };
