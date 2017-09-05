@@ -17,7 +17,7 @@ const saveMainMetrics = require('./schemas/main_metrics');
 const saveOffscreenImagesMetrics = require('./schemas/offscreen_images');
 const saveUserTimings = require('./schemas/user_timings');
 
-/** @type {String} CLIENT_SECRET_FILEPATH Filepath for the credentials to access Google Cloud/BigQuery */
+/** @type {String} CLIENT_SECRET_FILEPATH Filepath for the credentials to access Google Cloud/BigQuery */
 const CLIENT_SECRET_FILEPATH = path.join(__dirname, 'client_secret.json');
 
 /**
@@ -51,7 +51,7 @@ const dataset = bigquery && bigquery.dataset(BIGQUERY_DATASET);
 /**
  * @see {@link https://github.com/GoogleChrome/lighthouse/issues/73#issuecomment-309159928}
  */
-self.setImmediate = function(callback, ...argsForCallback) {
+self.setImmediate = (callback, ...argsForCallback) => {
   Promise.resolve().then(() => callback(...argsForCallback));
   return 0;
 };
