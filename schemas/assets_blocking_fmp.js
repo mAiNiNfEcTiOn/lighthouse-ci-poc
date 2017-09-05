@@ -9,7 +9,8 @@ const {
 const logBasicInfo = require('debug')('assets_blocking_fmp:basic-info');
 const logExtInfo = require('debug')('assets_blocking_fmp:extended-info');
 
-const schema = [
+/** @type {Object} schema Defines the table's structure to store the metrics */
+const schema = [ // eslint-disable-line
   {
     "mode": "REQUIRED",
     "name": "website",
@@ -82,7 +83,7 @@ const schema = [
 /**
  * @function processAssetsList
  * @param {Array} assetsList List of assets to extract the metrics from
- * @return {Array} An array with the metrics in the proper structure to be stored
+ * @return {Array} An array with the metrics in the proper structure to be stored
  */
 function processAssetsList(assetsList = []) {
   return (assetsList && assetsList.length)
@@ -99,7 +100,7 @@ function processAssetsList(assetsList = []) {
         url,
       };
     })
-  : [];
+    : [];
 }
 
 module.exports = function save(dataset, lighthouseRes) {
@@ -156,10 +157,11 @@ module.exports = function save(dataset, lighthouseRes) {
     website: lighthouseRes.url,
   };
 
+  /** Logs the metrics being stored */
   logExtInfo(data);
 
   logBasicInfo('Saving assets blocking First Meaningful Paint from %s to BigQuery', lighthouseRes.url);
   return dataset
     .table('assets_blocking_fmp')
     .insert(data);
-}
+};
