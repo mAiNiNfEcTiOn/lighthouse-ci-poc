@@ -1,4 +1,7 @@
 # lighthouse-ci-poc
+[![Build Status](https://travis-ci.org/mAiNiNfEcTiOn/lighthouse-ci-poc.svg?branch=master)](https://travis-ci.org/mAiNiNfEcTiOn/lighthouse-ci-poc)
+[![codecov](https://codecov.io/gh/mAiNiNfEcTiOn/lighthouse-ci-poc/branch/master/graph/badge.svg)](https://codecov.io/gh/mAiNiNfEcTiOn/lighthouse-ci-poc)
+
 
 This tool makes use of [Lighthouse](https://github.com/GoogleChrome/lighthouse) to gather performance metrics of a specific URL.
 
