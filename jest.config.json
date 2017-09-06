@@ -1,0 +1,9 @@
+{
+  "collectCoverage": true,
+  "collectCoverageFrom": [
+    "schemas/*.js",
+    "index.js"
+  ],
+  "moduleFileExtensions": ["js"],
+  "watchman": false
+}
