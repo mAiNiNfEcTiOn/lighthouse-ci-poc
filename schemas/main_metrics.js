@@ -3,7 +3,7 @@ const pwmetrics = require('pwmetrics/lib/metrics');
 const logBasicInfo = require('debug')('main_metrics:basic-info');
 const logExtInfo = require('debug')('main_metrics:extended-info');
 
-const schema = [
+const schema = [ // eslint-disable-line
   {
     "mode": "REQUIRED",
     "name": "website",
@@ -53,19 +53,32 @@ const schema = [
   }
 ];
 
+/**
+ * From the timings' list it generates an array of normalized objects to be stored in BigQuery
+ *
+ * @function processTimings
+ * @param {Array} timings
+ * @returns {Array}
+ */
+function processTimings(timings, lighthouseTimestamp) {
+  return timings
+    .filter(({ timestamp }) => Boolean(timestamp))
+    .map(({ id, timing, title }) => ({ id, timestamp: lighthouseTimestamp, timing, title }));
+}
+
 module.exports = function save(dataset, lighthouseRes) {
   logBasicInfo('Gathering main metrics from %s', lighthouseRes.url);
 
-  const metrics = pwmetrics.prepareData(lighthouseRes);
-  const timestamp = new Date(lighthouseRes.generatedTime).getTime();
+  const { timings } = pwmetrics.prepareData(lighthouseRes);
+  const lighthouseTimestamp = new Date(lighthouseRes.generatedTime).getTime();
+
+  const metrics = timings && timings.length ? processTimings(timings, lighthouseTimestamp) : [];
 
   const data = {
     build_id: process.env.BUILD_ID || 'none',
     build_system: process.env.BUILD_SYSTEM || 'none',
-    metrics: metrics.timings
-      .filter(({ timestamp }) => Boolean(timestamp))
-      .map(({ id, timing, title }) => ({ id, timestamp, timing, title })),
-    timestamp,
+    metrics,
+    timestamp: lighthouseTimestamp,
     website: lighthouseRes.url,
   };
 
@@ -75,4 +88,4 @@ module.exports = function save(dataset, lighthouseRes) {
   return dataset
     .table('main_metrics')
     .insert(data);
-}
+};

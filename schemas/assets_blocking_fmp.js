@@ -1,10 +1,16 @@
 const path = require('path');
 const URL = require('url');
 
+const {
+  BUILD_ID = 'none',
+  BUILD_SYSTEM = 'none',
+} = process.env;
+
 const logBasicInfo = require('debug')('assets_blocking_fmp:basic-info');
 const logExtInfo = require('debug')('assets_blocking_fmp:extended-info');
 
-const schema = [
+/** @type {Object} schema Defines the table's structure to store the metrics */
+const schema = [ // eslint-disable-line
   {
     "mode": "REQUIRED",
     "name": "website",
@@ -74,49 +80,76 @@ const schema = [
   }
 ];
 
-function processAssetsList(assetsList) {
-  return assetsList.map((asset) => {
-    const { url } = asset;
-    const totalKb = parseFloat(asset.totalKb);
-    const totalMs = parseInt(asset.totalMs.replace(',', ''), 10);
-    const type = path.extname(URL.parse(url).pathname).substr(1);
+/**
+ * @function processAssetsList
+ * @param {Array} assetsList List of assets to extract the metrics from
+ * @return {Array} An array with the metrics in the proper structure to be stored
+ */
+function processAssetsList(assetsList = []) {
+  return (assetsList && assetsList.length)
+    ? assetsList.map((asset) => {
+      const { url } = asset;
+      const totalKb = parseFloat(asset.totalKb);
+      const totalMs = parseInt(asset.totalMs.replace(',', ''), 10);
+      const type = path.extname(URL.parse(url).pathname).substr(1);
 
-    return {
-      totalKb,
-      totalMs,
-      type,
-      url,
-    };
-  });
+      return {
+        totalKb,
+        totalMs,
+        type,
+        url,
+      };
+    })
+    : [];
 }
 
 module.exports = function save(dataset, lighthouseRes) {
   logBasicInfo('Gathering assets blocking First Meaningful Paint from %s', lighthouseRes.url);
 
   const timestamp = new Date(lighthouseRes.generatedTime).getTime();
-  
+
   const { audits } = lighthouseRes.reportCategories[0];
-  const linksBlockingFirstPaint = audits.find(audit => audit.id === 'link-blocking-first-paint');
-  const scriptsBlockingFirstPaint = audits.find(audit => audit.id === 'script-blocking-first-paint');
+  if (!(audits && audits.length)) {
+    return Promise.reject(new Error(`There were no "audits" in Lighthouse's reportCategories[0]`));
+  }
 
-  const totalScriptsMs = scriptsBlockingFirstPaint.result.rawValue;
-  const totalLinksMs = linksBlockingFirstPaint.result.rawValue;
-  
-  const totalLinksKb = linksBlockingFirstPaint.result.extendedInfo.value.results.reduce((result, item) => {
-    return Math.max(result, parseFloat(item.totalKb));
-  }, 0);
+  const links = audits.find(audit => audit.id === 'link-blocking-first-paint');
+  const scripts = audits.find(audit => audit.id === 'script-blocking-first-paint');
 
-  const totalScriptsKb = scriptsBlockingFirstPaint.result.extendedInfo.value.results.reduce((result, item) => {
-    return result + parseFloat(item.totalKb);
-  }, 0);
+  const totalLinksMs = (links && links.result && links.result.rawValue) || 0;
 
-  const assets = [linksBlockingFirstPaint, scriptsBlockingFirstPaint]
-    .reduce((result, item) => result.concat(processAssetsList(item.result.extendedInfo.value.results)), []);
+  const totalScriptsMs = (scripts && scripts.result && scripts.result.rawValue) || 0;
+
+  const linksResults = (
+    links &&
+    links.result &&
+    links.result.extendedInfo &&
+    links.result.extendedInfo.value &&
+    links.result.extendedInfo.value.results
+  );
+  const totalLinksKb = linksResults && linksResults.length
+    ? linksResults.reduce((result, item) => Math.max(result, parseFloat(item.totalKb)), 0)
+    : 0;
+
+  const scriptsResults = (
+    scripts &&
+    scripts.result &&
+    scripts.result.extendedInfo &&
+    scripts.result.extendedInfo.value &&
+    scripts.result.extendedInfo.results
+  );
+  const totalScriptsKb = scriptsResults && scriptsResults.length
+    ? scriptsResults.reduce((result, item) => (result + parseFloat(item.totalKb)), 0)
+    : 0;
+
+  const assets = [linksResults, scriptsResults]
+    .filter(Boolean)
+    .reduce((result, item) => result.concat(processAssetsList(item)), []);
 
   const data = {
     assets,
-    build_id: process.env.BUILD_ID || 'none',
-    build_system: process.env.BUILD_SYSTEM || 'none',
+    build_id: BUILD_ID,
+    build_system: BUILD_SYSTEM,
     timestamp,
     totalScriptsKb,
     totalScriptsMs,
@@ -125,10 +158,11 @@ module.exports = function save(dataset, lighthouseRes) {
     website: lighthouseRes.url,
   };
 
+  /** Logs the metrics being stored */
   logExtInfo(data);
 
   logBasicInfo('Saving assets blocking First Meaningful Paint from %s to BigQuery', lighthouseRes.url);
   return dataset
     .table('assets_blocking_fmp')
     .insert(data);
-}
+};

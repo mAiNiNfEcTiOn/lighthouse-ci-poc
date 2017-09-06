@@ -5,6 +5,7 @@
   "main": "index.js",
   "scripts": {
     "start": "node index.js",
+    "lint": "eslint --max-warnings 0 .",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
@@ -25,6 +26,29 @@
   "dependencies": {
     "@google-cloud/bigquery": "^0.9.6",
     "debug": "^3.0.1",
-    "pwmetrics": "^3.1.1"
+    "lighthouse": "^2.4.0",
+    "pwmetrics": "^3.1.2"
+  },
+  "devDependencies": {
+    "eslint": "^4.6.1",
+    "eslint-config-travix": "^3.0.0",
+    "eslint-plugin-import": "^2.7.0"
+  },
+  "eslintConfig": {
+    "extends": "travix/base",
+    "globals": {
+      "self": true
+    },
+    "rules": {
+      "no-console": [
+        "error",
+        {
+          "allow": [
+            "warn",
+            "error"
+          ]
+        }
+      ]
+    }
   }
 }
