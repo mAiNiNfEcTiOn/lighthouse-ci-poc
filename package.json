@@ -8,7 +8,8 @@
     "ci:send-coverage": "codecov",
     "ci:test": "TZ=utc jest -c ./jest.config.json --bail --ci --coverage --no-cache --silent",
     "start": "node index.js",
-    "test": "TZ=utc jest -c ./jest.config.json"
+    "test": "TZ=utc jest -c ./jest.config.json",
+    "test:watch": "TZ=utc jest -c ./jest.config.json --watch"
   },
   "repository": {
     "type": "git",
