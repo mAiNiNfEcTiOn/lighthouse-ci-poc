@@ -14,6 +14,8 @@ describe('Schemas', () => {
     };
 
     beforeEach(() => {
+      delete process.env.BUILD_ID;
+      delete process.env.BUILD_SYSTEM;
       mockTable.insert = jest.fn().mockReturnValue(Promise.resolve());
       mockDataset.table = jest.fn().mockReturnValue(mockTable);
     });
@@ -50,7 +52,7 @@ describe('Schemas', () => {
         });
     });
 
-    it('attempts to insert a record on BigQuery with proper values extracted from the audits', (done) => {
+    it('attempts to insert a record on BigQuery with proper values extracted from the audits', () => {
       lighthouseResMock.reportCategories = [{
         audits: [
           {
@@ -102,11 +104,10 @@ describe('Schemas', () => {
             totalLinksMs: 1000,
             website: lighthouseResMock.url,
           });
-          done();
         });
     });
 
-    it('when the audits do not contain assets blocking the fmp it will return an empty array for the assets', (done) => {
+    it('when the audits do not contain assets blocking the fmp it will return an empty array for the assets', () => {
       lighthouseResMock.reportCategories = [{
         audits: [
           {
@@ -149,7 +150,6 @@ describe('Schemas', () => {
             totalLinksMs: 0,
             website: lighthouseResMock.url,
           });
-          done();
         });
     });
   });
