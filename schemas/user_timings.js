@@ -59,16 +59,20 @@ const schema = [ // eslint-disable-line
  * @returns {Array}
  */
 function processMetricsList(metricsList) {
-  return metricsList
-    .filter(metric => !metric.isMark)
-    .map((metric) => {
-      return {
-        metricDuration: metric.duration,
-        metricEndTime: metric.endTime,
-        metricName: metric.name,
-        metricStartTime: metric.startTime,
-      };
-    });
+  if (metricsList && metricsList.length) {
+    return metricsList
+      .filter(metric => !metric.isMark)
+      .map((metric) => {
+        return {
+          metricDuration: metric.duration,
+          metricEndTime: metric.endTime,
+          metricName: metric.name,
+          metricStartTime: metric.startTime,
+        };
+      });
+  }
+
+  return [];
 }
 
 module.exports = function save(dataset, lighthouseRes) {
@@ -89,9 +93,7 @@ module.exports = function save(dataset, lighthouseRes) {
     userTimingsAudit.result.extendedInfo.value
   );
 
-  const metrics = userTimingsValue && userTimingsValue.length
-    ? processMetricsList(userTimingsValue)
-    : [];
+  const metrics = processMetricsList(userTimingsValue);
 
   const data = {
     build_id: process.env.BUILD_ID || 'none',
