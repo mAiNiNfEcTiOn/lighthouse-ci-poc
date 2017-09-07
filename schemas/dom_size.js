@@ -64,20 +64,24 @@ const schema = [ // eslint-disable-line
  * @returns {Array}
  */
 function processMetricsList(metricsList) {
-  return metricsList
-    .filter(metric => (metric.title !== 'Total DOM Nodes'))
-    .map((metric) => {
-      const { snippet, target, title, value } = metric;
-      const metricValue = parseInt(value.replace(',', ''), 10);
-      const metricTarget = parseInt(target.substr(2).replace(',', ''), 10);
+  if (metricsList && metricsList.length) {
+    return metricsList
+      .filter(metric => (metric.title !== 'Total DOM Nodes'))
+      .map((metric) => {
+        const { snippet, target, title, value } = metric;
+        const metricValue = parseInt(value.replace(',', ''), 10);
+        const metricTarget = parseInt(target.substr(2).replace(',', ''), 10);
 
-      return {
-        metricName: title,
-        metricSnippet: snippet,
-        metricTarget,
-        metricValue,
-      };
-    });
+        return {
+          metricName: title,
+          metricSnippet: snippet,
+          metricTarget,
+          metricValue,
+        };
+      });
+  }
+
+  return [];
 }
 
 module.exports = function save(dataset, lighthouseRes) {
@@ -100,7 +104,7 @@ module.exports = function save(dataset, lighthouseRes) {
 
   const totalDOMNodes = domSizeResult && domSizeResult.rawValue ? domSizeResult.rawValue : 0;
 
-  const metrics = domSizeExtInfoValue && domSizeExtInfoValue.length ? processMetricsList(domSizeExtInfoValue) : [];
+  const metrics = processMetricsList(domSizeExtInfoValue);
 
   const data = {
     build_id: process.env.BUILD_ID || 'none',

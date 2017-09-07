@@ -74,16 +74,20 @@ const schema = [ // eslint-disable-line
  * @returns {Array}
  */
 function processImagesList(imagesList) {
-  return imagesList.map((image) => {
-    const { requestStartTime, totalBytes, url, wastedBytes, wastedMs } = image;
-    return {
-      requestStartTime,
-      totalBytes,
-      url,
-      wastedBytes,
-      wastedMs: parseInt(wastedMs.replace(',', ''), 10),
-    };
-  });
+  if (imagesList && imagesList.length) {
+    return imagesList.map((image) => {
+      const { requestStartTime, totalBytes, url, wastedBytes, wastedMs } = image;
+      return {
+        requestStartTime,
+        totalBytes,
+        url,
+        wastedBytes,
+        wastedMs: parseInt(wastedMs.replace(',', ''), 10),
+      };
+    });
+  }
+
+  return [];
 }
 
 module.exports = function save(dataset, lighthouseRes) {
@@ -112,9 +116,7 @@ module.exports = function save(dataset, lighthouseRes) {
     ? offscreenImagesValue.wastedMs
     : 0;
 
-  const images = offscreenImagesResults && offscreenImagesResults.length
-    ? processImagesList(offscreenImagesResults)
-    : [];
+  const images = processImagesList(offscreenImagesResults);
 
   const data = {
     build_id: process.env.BUILD_ID || 'none',

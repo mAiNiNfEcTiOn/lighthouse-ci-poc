@@ -61,18 +61,27 @@ const schema = [ // eslint-disable-line
  * @returns {Array}
  */
 function processTimings(timings, lighthouseTimestamp) {
-  return timings
-    .filter(({ timestamp }) => Boolean(timestamp))
-    .map(({ id, timing, title }) => ({ id, timestamp: lighthouseTimestamp, timing, title }));
+  if (timings && timings.length) {
+    return timings
+      .filter(({ timestamp }) => Boolean(timestamp))
+      .map(({ id, timing, title }) => ({ id, timestamp: lighthouseTimestamp, timing, title }))
+  }
+
+  return [];
 }
 
 module.exports = function save(dataset, lighthouseRes) {
   logBasicInfo('Gathering main metrics from %s', lighthouseRes.url);
 
+  const { audits } = lighthouseRes.reportCategories[0];
+  if (!(audits && audits.length)) {
+    return Promise.reject(new Error(`There were no "audits" in Lighthouse's reportCategories[0]`));
+  }
+
   const { timings } = pwmetrics.prepareData(lighthouseRes);
   const lighthouseTimestamp = new Date(lighthouseRes.generatedTime).getTime();
 
-  const metrics = timings && timings.length ? processTimings(timings, lighthouseTimestamp) : [];
+  const metrics = processTimings(timings, lighthouseTimestamp);
 
   const data = {
     build_id: process.env.BUILD_ID || 'none',

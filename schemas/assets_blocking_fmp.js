@@ -85,7 +85,7 @@ const schema = [ // eslint-disable-line
  * @param {Array} assetsList List of assets to extract the metrics from
  * @return {Array} An array with the metrics in the proper structure to be stored
  */
-function processAssetsList(assetsList = []) {
+function processAssetsList(assetsList) {
   return (assetsList && assetsList.length)
     ? assetsList.map((asset) => {
       const { url } = asset;
@@ -136,7 +136,7 @@ module.exports = function save(dataset, lighthouseRes) {
     scripts.result &&
     scripts.result.extendedInfo &&
     scripts.result.extendedInfo.value &&
-    scripts.result.extendedInfo.results
+    scripts.result.extendedInfo.value.results
   );
   const totalScriptsKb = scriptsResults && scriptsResults.length
     ? scriptsResults.reduce((result, item) => (result + parseFloat(item.totalKb)), 0)
