@@ -94,10 +94,8 @@ describe('Schemas', () => {
                 metricEndTime: 8500.22,
                 metricName: 'fakeName2',
                 metricStartTime: 6500.22,
-              }
+              },
             ],
-            potentialSavingsInKb: 400.60,
-            potentialSavingsInMs: 3400,
             timestamp: lighthouseResMock.generatedTime.getTime(),
             website: lighthouseResMock.url,
           });
