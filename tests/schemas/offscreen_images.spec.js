@@ -120,8 +120,10 @@ describe('Schemas', () => {
           {
             id: 'offscreen-images',
             result: {
-              details: {
-                items: [],
+              extendedInfo: {
+                value: {
+                  results: [],
+                },
               },
             },
           },
