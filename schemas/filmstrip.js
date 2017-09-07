@@ -58,6 +58,7 @@ module.exports = function save(dataset, lighthouseRes) {
 
   const filmstripAudit = lighthouseRes.reportCategories[0].audits.find(item => (item.id === 'screenshot-thumbnails'));
   const filmstripItems = (
+    filmstripAudit &&
     filmstripAudit.result &&
     filmstripAudit.result.details &&
     filmstripAudit.result.details.items
