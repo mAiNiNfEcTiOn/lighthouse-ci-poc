@@ -73,3 +73,6 @@ typings/
 
 # Ignore credentials
 client_secret.json
+
+# Ignore Wallaby
+wallaby.js
