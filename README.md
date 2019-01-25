@@ -65,7 +65,6 @@ Being `headless` is optional, but I've been running Chrome Canary with these fla
 * --mute-audio
 * --no-first-run
 
-
 ## Issues
 
 Well, use the _issues_ section!
