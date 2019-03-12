@@ -8,9 +8,8 @@ describe('Schemas', () => {
     const mockTable = {};
     const mockDataset = {};
     const lighthouseResMock = {
-      generatedTime: new Date(2010, 0, 1, 0, 0 ,0),
-      reportCategories: [{}],
-      url: 'http://www.fake.dom',
+      fetchTime: new Date(2010, 0, 1, 0, 0 ,0),
+      requestedUrl: 'http://www.fake.dom',
     };
 
     beforeEach(() => {
@@ -24,15 +23,19 @@ describe('Schemas', () => {
       return testSubject(mockDataset, lighthouseResMock)
         .catch((err) => {
           expect(err).toBeInstanceOf(Error);
-          expect(err.message).toBe(`There were no "audits" in Lighthouse's reportCategories[0]`);
+          expect(err.message).toBe(`There were no "audits" in Lighthouse's response`);
           expect(mockDataset.table).not.toHaveBeenCalled();
         });
     });
 
     it('attempts to insert a record on BigQuery with values of 0 and an empty array when the right audits are not there', () => {
-      lighthouseResMock.reportCategories = [{
-        audits: [{ id: 'fakeAudit' }],
-      }];
+      lighthouseResMock.audits = {
+        'screenshot-thumbnails': {
+          details: {
+            items: [],
+          },
+        }
+      };
 
       return testSubject(mockDataset, lighthouseResMock)
         .then(() => {
@@ -42,28 +45,23 @@ describe('Schemas', () => {
             build_id: 'none',
             build_system: 'none',
             screenshots: [],
-            timestamp: lighthouseResMock.generatedTime.getTime(),
-            website: lighthouseResMock.url,
+            timestamp: lighthouseResMock.fetchTime.getTime(),
+            website: lighthouseResMock.requestedUrl,
           });
         });
     });
 
     it('attempts to insert a record on BigQuery with proper values extracted from the audits', () => {
-      lighthouseResMock.reportCategories = [{
-        audits: [
-          {
-            id: 'screenshot-thumbnails',
-            result: {
-              details: {
-                items: [
-                  { data: 'fakeBase64Image', timing: 123123213 },
-                  { data: 'fakeBase64Image2', timing: 123123214 },
-                ],
-              },
-            },
+      lighthouseResMock.audits = {
+        'screenshot-thumbnails': {
+          details: {
+            items: [
+              { data: 'fakeBase64Image', timing: 123123213 },
+              { data: 'fakeBase64Image2', timing: 123123214 },
+            ],
           },
-        ],
-      }];
+        }
+      };
 
       return testSubject(mockDataset, lighthouseResMock)
         .then(() => {
@@ -76,33 +74,28 @@ describe('Schemas', () => {
               {
                 data: 'fakeBase64Image',
                 timing: 123123213,
-                timestamp: lighthouseResMock.generatedTime.getTime(),
+                timestamp: lighthouseResMock.fetchTime.getTime(),
               },
               {
                 data: 'fakeBase64Image2',
                 timing: 123123214,
-                timestamp: lighthouseResMock.generatedTime.getTime(),
+                timestamp: lighthouseResMock.fetchTime.getTime(),
               },
             ],
-            timestamp: lighthouseResMock.generatedTime.getTime(),
-            website: lighthouseResMock.url,
+            timestamp: lighthouseResMock.fetchTime.getTime(),
+            website: lighthouseResMock.requestedUrl,
           });
       });
     });
 
     it('when the audits do not contain assets blocking the fmp it will return an empty array for the assets', () => {
-      lighthouseResMock.reportCategories = [{
-        audits: [
-          {
-            id: 'screenshot-thumbnails',
-            result: {
-              details: {
-                items: [],
-              },
-            },
+      lighthouseResMock.audits = {
+        'screenshot-thumbnails': {
+          details: {
+            items: [],
           },
-        ],
-      }];
+        }
+      };
 
       return testSubject(mockDataset, lighthouseResMock)
         .then((result) => {
@@ -112,34 +105,29 @@ describe('Schemas', () => {
             build_id: 'none',
             build_system: 'none',
             screenshots: [],
-            timestamp: lighthouseResMock.generatedTime.getTime(),
-            website: lighthouseResMock.url,
+            timestamp: lighthouseResMock.fetchTime.getTime(),
+            website: lighthouseResMock.requestedUrl,
           });
           expect(result).toMatchObject({
             filmstrip: {
               build_id: 'none',
               build_system: 'none',
               screenshots: [],
-              timestamp: lighthouseResMock.generatedTime.getTime(),
-              website: lighthouseResMock.url,
+              timestamp: lighthouseResMock.fetchTime.getTime(),
+              website: lighthouseResMock.requestedUrl,
             }
           });
         });
     });
 
     it('only returns the data without trying to store in the database when dataset is falsy', () => {
-      lighthouseResMock.reportCategories = [{
-        audits: [
-          {
-            id: 'screenshot-thumbnails',
-            result: {
-              details: {
-                items: [],
-              },
-            },
+      lighthouseResMock.audits = {
+        'screenshot-thumbnails': {
+          details: {
+            items: [],
           },
-        ],
-      }];
+        }
+      };
 
       return testSubject(false, lighthouseResMock)
         .then((result) => {
@@ -148,16 +136,16 @@ describe('Schemas', () => {
             build_id: 'none',
             build_system: 'none',
             screenshots: [],
-            timestamp: lighthouseResMock.generatedTime.getTime(),
-            website: lighthouseResMock.url,
+            timestamp: lighthouseResMock.fetchTime.getTime(),
+            website: lighthouseResMock.requestedUrl,
           });
           expect(result).toMatchObject({
             filmstrip: {
               build_id: 'none',
               build_system: 'none',
               screenshots: [],
-              timestamp: lighthouseResMock.generatedTime.getTime(),
-              website: lighthouseResMock.url,
+              timestamp: lighthouseResMock.fetchTime.getTime(),
+              website: lighthouseResMock.requestedUrl,
             }
           });
         });

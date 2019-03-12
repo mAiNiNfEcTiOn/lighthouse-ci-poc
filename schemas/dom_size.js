@@ -34,18 +34,18 @@ const schema = [ // eslint-disable-line
     "fields": [
       {
         "mode": "REQUIRED",
+        "name": "metricElementType",
+        "type": "STRING"
+      },
+      {
+        "mode": "REQUIRED",
+        "name": "metricElementValue",
+        "type": "STRING"
+      },
+      {
+        "mode": "REQUIRED",
         "name": "metricName",
         "type": "STRING"
-      },
-      {
-        "mode": "REQUIRED",
-        "name": "metricSnippet",
-        "type": "STRING"
-      },
-      {
-        "mode": "REQUIRED",
-        "name": "metricTarget",
-        "type": "INTEGER"
       },
       {
         "mode": "REQUIRED",
@@ -64,47 +64,36 @@ const schema = [ // eslint-disable-line
  * @returns {Array}
  */
 function processMetricsList(metricsList) {
-  if (metricsList && metricsList.length) {
-    return metricsList
-      .filter(metric => (metric.title !== 'Total DOM Nodes'))
-      .map((metric) => {
-        const { snippet, target, title, value } = metric;
-        const metricValue = parseInt(value.replace(',', ''), 10);
-        const metricTarget = parseInt(target.substr(2).replace(',', ''), 10);
+  return metricsList
+    .filter(metric => (metric.statistic !== 'Total DOM Nodes'))
+    .map((metric) => {
+      const { element, statistic, value } = metric;
+      const metricValue = parseInt(value.replace(',', ''), 10);
 
-        return {
-          metricName: title,
-          metricSnippet: snippet,
-          metricTarget,
-          metricValue,
-        };
-      });
-  }
-
-  return [];
+      return {
+        metricElementType: element.type,
+        metricElementValue: element.value,
+        metricName: statistic,
+        metricValue,
+      };
+    });
 }
 
 module.exports = function save(dataset, lighthouseRes) {
-  logBasicInfo('Gathering DOM Size data from %s', lighthouseRes.url);
+  logBasicInfo('Gathering DOM Size data from %s', lighthouseRes.requestedUrl);
 
-  const timestamp = new Date(lighthouseRes.generatedTime).getTime();
+  const timestamp = new Date(lighthouseRes.fetchTime).getTime();
 
-  const { audits } = lighthouseRes.reportCategories[0];
-  if (!(audits && audits.length)) {
-    return Promise.reject(new Error(`There were no "audits" in Lighthouse's reportCategories[0]`));
+  const { audits } = lighthouseRes;
+  if (!audits) {
+    return Promise.reject(new Error(`There were no "audits" in Lighthouse's response`));
   }
 
-  const domSizeAudit = audits.find(audit => (audit.id === 'dom-size'));
-  const domSizeResult = domSizeAudit && domSizeAudit.result;
-  const domSizeExtInfoValue = (
-    domSizeResult &&
-    domSizeResult.extendedInfo &&
-    domSizeResult.extendedInfo.value
-  );
+  const domSizeAudit = audits['dom-size'];
 
-  const totalDOMNodes = domSizeResult && domSizeResult.rawValue ? domSizeResult.rawValue : 0;
+  const totalDOMNodes = domSizeAudit && domSizeAudit.rawValue ? domSizeAudit.rawValue : 0;
 
-  const metrics = processMetricsList(domSizeExtInfoValue);
+  const metrics = processMetricsList(domSizeAudit.details.items);
 
   const data = {
     build_id: process.env.BUILD_ID || 'none',
@@ -112,15 +101,15 @@ module.exports = function save(dataset, lighthouseRes) {
     metrics,
     timestamp,
     totalDOMNodes,
-    website: lighthouseRes.url,
+    website: lighthouseRes.requestedUrl,
   };
 
   logExtInfo(data);
 
-  logBasicInfo('Saving DOM Size data from %s to BigQuery', lighthouseRes.url);
 
   const returnData = { dom_size: data };
   if (dataset) {
+    logBasicInfo('Saving DOM Size data from %s to BigQuery', lighthouseRes.requestedUrl);
     return dataset
       .table('dom_size')
       .insert(data)

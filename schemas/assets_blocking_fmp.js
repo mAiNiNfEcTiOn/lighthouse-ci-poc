@@ -28,7 +28,7 @@ const schema = [ // eslint-disable-line
   },
   {
     "mode": "REQUIRED",
-    "name": "totalLinksKb",
+    "name": "totalLinksBytes",
     "type": "FLOAT"
   },
   {
@@ -38,7 +38,7 @@ const schema = [ // eslint-disable-line
   },
   {
     "mode": "REQUIRED",
-    "name": "totalScriptsKb",
+    "name": "totalScriptsBytes",
     "type": "FLOAT"
   },
   {
@@ -58,7 +58,7 @@ const schema = [ // eslint-disable-line
     "fields": [
       {
         "mode": "REQUIRED",
-        "name": "totalKb",
+        "name": "totalBytes",
         "type": "FLOAT"
       },
       {
@@ -81,87 +81,70 @@ const schema = [ // eslint-disable-line
 ];
 
 /**
- * @function processAssetsList
+ * @function processAssetsListMapper
  * @param {Array} assetsList List of assets to extract the metrics from
  * @return {Array} An array with the metrics in the proper structure to be stored
  */
-function processAssetsList(assetsList) {
-  return (assetsList && assetsList.length)
-    ? assetsList.map((asset) => {
-      const { url } = asset;
-      const totalKb = parseFloat(asset.totalKb);
-      const totalMs = parseInt(asset.totalMs.replace(',', ''), 10);
-      const type = path.extname(URL.parse(url).pathname).substr(1);
+function processAssetsListMapper(asset) {
+  const { url } = asset;
+  const totalBytes = asset.totalBytes;
+  const totalMs = asset.wastedMs;
+  const type = path.extname(URL.parse(url).pathname).substr(1);
 
-      return {
-        totalKb,
-        totalMs,
-        type,
-        url,
-      };
-    })
-    : [];
+  return {
+    totalBytes,
+    totalMs,
+    type,
+    url,
+  };
 }
 
 module.exports = function save(dataset, lighthouseRes) {
-  logBasicInfo('Gathering assets blocking First Meaningful Paint from %s', lighthouseRes.url);
+  logBasicInfo('Gathering assets blocking First Meaningful Paint from %s', lighthouseRes.requestedUrl);
 
-  const timestamp = new Date(lighthouseRes.generatedTime).getTime();
+  const timestamp = new Date(lighthouseRes.fetchTime).getTime();
 
-  const { audits } = lighthouseRes.reportCategories[0];
-  if (!(audits && audits.length)) {
-    return Promise.reject(new Error(`There were no "audits" in Lighthouse's reportCategories[0]`));
+  const { audits } = lighthouseRes;
+  if (!audits) {
+    return Promise.reject(new Error(`There were no "audits" in Lighthouse's response`));
   }
 
-  const links = audits.find(audit => audit.id === 'link-blocking-first-paint');
-  const scripts = audits.find(audit => audit.id === 'script-blocking-first-paint');
+  const renderBlockingResources = audits['render-blocking-resources'];
 
-  const totalLinksMs = (links && links.result && links.result.rawValue) || 0;
+  const totalLinksBytes = renderBlockingResources.details.items
+    .filter((item) => item.url.includes('/css/') || (path.extname(URL.parse(item.url).pathname) === '.css'))
+    .reduce((acc, item) => (acc + item.totalBytes), 0);
 
-  const totalScriptsMs = (scripts && scripts.result && scripts.result.rawValue) || 0;
+  const totalScriptsBytes = renderBlockingResources.details.items
+    .filter((item) => path.extname(URL.parse(item.url).pathname) === '.js')
+    .reduce((acc, item) => (acc + item.totalBytes), 0);
 
-  const linksResults = (
-    links &&
-    links.result &&
-    links.result.extendedInfo &&
-    links.result.extendedInfo.value &&
-    links.result.extendedInfo.value.results
-  );
-  const totalLinksKb = linksResults && linksResults.length
-    ? linksResults.reduce((result, item) => Math.max(result, parseFloat(item.totalKb)), 0)
-    : 0;
+  const totalLinksMs = renderBlockingResources.details.items
+    .filter((item) => item.url.includes('/css/') || (path.extname(URL.parse(item.url).pathname) === '.css'))
+    .reduce((acc, item) => (acc + item.wastedMs), 0);
 
-  const scriptsResults = (
-    scripts &&
-    scripts.result &&
-    scripts.result.extendedInfo &&
-    scripts.result.extendedInfo.value &&
-    scripts.result.extendedInfo.value.results
-  );
-  const totalScriptsKb = scriptsResults && scriptsResults.length
-    ? scriptsResults.reduce((result, item) => (result + parseFloat(item.totalKb)), 0)
-    : 0;
+  const totalScriptsMs = renderBlockingResources.details.items
+    .filter((item) => path.extname(URL.parse(item.url).pathname) === '.js')
+    .reduce((acc, item) => (acc + item.wastedMs), 0);
 
-  const assets = [linksResults, scriptsResults]
-    .filter(Boolean)
-    .reduce((result, item) => result.concat(processAssetsList(item)), []);
+  const assets = renderBlockingResources.details.items.map(processAssetsListMapper);
 
   const data = {
     assets,
     build_id: BUILD_ID,
     build_system: BUILD_SYSTEM,
     timestamp,
-    totalScriptsKb,
+    totalScriptsBytes,
     totalScriptsMs,
-    totalLinksKb,
+    totalLinksBytes,
     totalLinksMs,
-    website: lighthouseRes.url,
+    website: lighthouseRes.requestedUrl,
   };
 
   /** Logs the metrics being stored */
   logExtInfo(data);
 
-  logBasicInfo('Saving assets blocking First Meaningful Paint from %s to BigQuery', lighthouseRes.url);
+  logBasicInfo('Saving assets blocking First Meaningful Paint from %s to BigQuery', lighthouseRes.requestedUrl);
 
   const returnData = { assets_blocking_fmp: data };
 

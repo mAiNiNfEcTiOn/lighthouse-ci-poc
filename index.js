@@ -1,9 +1,10 @@
 const BigQuery = require('@google-cloud/bigquery');
 const lighthouse = require('lighthouse');
 const path = require('path');
-const perfConfig = require('lighthouse/lighthouse-core/config/perf.json');
+const perfConfig = require('lighthouse/lighthouse-core/config/perf-config');
 const util = require('util');
 const URL = require('url');
+const fs = require('fs');
 
 /** Create/Set debug methods */
 const logBasicInfo = require('debug')('index:basic-info');
@@ -51,7 +52,7 @@ const dataset = bigquery && bigquery.dataset(BIGQUERY_DATASET);
 /**
  * @see {@link https://github.com/GoogleChrome/lighthouse/issues/73#issuecomment-309159928}
  */
-self.setImmediate = (callback, ...argsForCallback) => {
+global.setImmediate = (callback, ...argsForCallback) => {
   Promise.resolve().then(() => callback(...argsForCallback));
   return 0;
 };
@@ -64,16 +65,16 @@ self.setImmediate = (callback, ...argsForCallback) => {
  * @return {Promise} Returns a Promise after all schemas' functions finish processing.
  */
 function storeMetrics(lighthouseRes) {
-  if (!(('generatedTime' in lighthouseRes) && lighthouseRes.generatedTime)) {
+  if (!(('fetchTime' in lighthouseRes) && lighthouseRes.fetchTime)) {
     return Promise.reject(new Error(`There was no "generatedTime" in Lighthouse's response`));
   }
 
-  if (!(('reportCategories' in lighthouseRes) && lighthouseRes.reportCategories.length)) {
-    return Promise.reject(new Error(`There were no "reportCategories" in Lighthouse's response`));
+  if (!('audits' in lighthouseRes)) {
+    return Promise.reject(new Error(`There were no "audits" in Lighthouse's response`));
   }
 
 
-  logBasicInfo('Now storing %s data in BigQuery', lighthouseRes.url);
+  logBasicInfo('Now storing %s data in BigQuery', lighthouseRes.requestedUrl);
 
   return Promise.all([
     saveAssetsBlockingFmp(dataset, lighthouseRes),
@@ -82,7 +83,7 @@ function storeMetrics(lighthouseRes) {
     saveMainMetrics(dataset, lighthouseRes),
     saveOffscreenImagesMetrics(dataset, lighthouseRes),
     saveUserTimings(dataset, lighthouseRes),
-  ]).then(() => logBasicInfo('Finished storing %s data in BigQuery', lighthouseRes.url));
+  ]).then(() => logBasicInfo('Finished storing %s data in BigQuery', lighthouseRes.requestedUrl));
 }
 
 
@@ -100,8 +101,9 @@ function measureURL(url) {
   logBasicInfo('Starting to measure %s', url);
 
   return lighthouse(url, lighthouseOptions, perfConfig)
-    .then((lighthouseRes) => {
-      logBasicInfo('Finished measuring %s.', lighthouseRes.url);
+    .then((lighthouseOriginalRes) => {
+      const lighthouseRes = lighthouseOriginalRes.lhr;
+      logBasicInfo('Finished measuring %s.', lighthouseRes.requestedUrl);
       logExtInfo(util.inspect(lighthouseRes, true, null, true));
       return lighthouseRes;
     })

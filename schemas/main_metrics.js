@@ -1,4 +1,4 @@
-const pwmetrics = require('pwmetrics/lib/metrics');
+const { adaptMetricsData } = require('pwmetrics/lib/metrics/metrics-adapter');
 
 const logBasicInfo = require('debug')('main_metrics:basic-info');
 const logExtInfo = require('debug')('main_metrics:extended-info');
@@ -71,15 +71,15 @@ function processTimings(timings, lighthouseTimestamp) {
 }
 
 module.exports = function save(dataset, lighthouseRes) {
-  logBasicInfo('Gathering main metrics from %s', lighthouseRes.url);
+  logBasicInfo('Gathering main metrics from %s', lighthouseRes.requestedUrl);
 
-  const { audits } = lighthouseRes.reportCategories[0];
-  if (!(audits && audits.length)) {
-    return Promise.reject(new Error(`There were no "audits" in Lighthouse's reportCategories[0]`));
+  const { audits } = lighthouseRes;
+  if (!audits) {
+    return Promise.reject(new Error(`There were no "audits" in Lighthouse's response`));
   }
 
-  const { timings } = pwmetrics.prepareData(lighthouseRes);
-  const lighthouseTimestamp = new Date(lighthouseRes.generatedTime).getTime();
+  const { timings } = adaptMetricsData(lighthouseRes);
+  const lighthouseTimestamp = new Date(lighthouseRes.fetchTime).getTime();
 
   const metrics = processTimings(timings, lighthouseTimestamp);
 
@@ -88,15 +88,15 @@ module.exports = function save(dataset, lighthouseRes) {
     build_system: process.env.BUILD_SYSTEM || 'none',
     metrics,
     timestamp: lighthouseTimestamp,
-    website: lighthouseRes.url,
+    website: lighthouseRes.requestedUrl,
   };
 
   logExtInfo(data);
 
-  logBasicInfo('Saving main metrics from %s to BigQuery', lighthouseRes.url);
 
   const returnData = { main_metrics: data };
   if (dataset) {
+    logBasicInfo('Saving main metrics from %s to BigQuery', lighthouseRes.requestedUrl);
     return dataset
       .table('main_metrics')
       .insert(data)

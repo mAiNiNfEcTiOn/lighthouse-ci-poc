@@ -8,9 +8,8 @@ describe('Schemas', () => {
     const mockTable = {};
     const mockDataset = {};
     const lighthouseResMock = {
-      generatedTime: new Date(2010, 0, 1, 0, 0 ,0),
-      reportCategories: [{}],
-      url: 'http://www.fake.dom',
+      fetchTime: new Date(2010, 0, 1, 0, 0 ,0),
+      requestedUrl: 'http://www.fake.dom',
     };
 
     beforeEach(() => {
@@ -24,15 +23,19 @@ describe('Schemas', () => {
       return testSubject(mockDataset, lighthouseResMock)
         .catch((err) => {
           expect(err).toBeInstanceOf(Error);
-          expect(err.message).toBe(`There were no "audits" in Lighthouse's reportCategories[0]`);
+          expect(err.message).toBe(`There were no "audits" in Lighthouse's response`);
           expect(mockDataset.table).not.toHaveBeenCalled();
         });
     });
 
     it('attempts to insert a record on BigQuery with values of 0 and an empty array when the right audits are not there', () => {
-      lighthouseResMock.reportCategories = [{
-        audits: [{ id: 'fakeAudit' }],
-      }];
+      lighthouseResMock.audits = {
+        'user-timings': {
+          details: {
+            items: []
+          }
+        }
+      };
 
       return testSubject(mockDataset, lighthouseResMock)
         .then(() => {
@@ -42,38 +45,33 @@ describe('Schemas', () => {
             build_id: 'none',
             build_system: 'none',
             metrics: [],
-            timestamp: lighthouseResMock.generatedTime.getTime(),
-            website: lighthouseResMock.url,
+            timestamp: lighthouseResMock.fetchTime.getTime(),
+            website: lighthouseResMock.requestedUrl,
           });
         });
     });
 
     it('attempts to insert a record on BigQuery with proper values extracted from the audits', () => {
-      lighthouseResMock.reportCategories = [{
-        audits: [
-          {
-            id: 'user-timings',
-            result: {
-              extendedInfo: {
-                value: [
-                  {
-                    duration: 5000,
-                    endTime: 6000.30,
-                    name: 'fakeName',
-                    startTime: 1000.30,
-                  },
-                  {
-                    duration: 2000,
-                    endTime: 8500.22,
-                    name: 'fakeName2',
-                    startTime: 6500.22,
-                  },
-                ],
+      lighthouseResMock.audits = {
+        'user-timings': {
+          details: {
+            items: [
+              {
+                duration: 5000,
+                endTime: 6000.30,
+                name: 'fakeName',
+                startTime: 1000.30,
               },
-            },
+              {
+                duration: 2000,
+                endTime: 8500.22,
+                name: 'fakeName2',
+                startTime: 6500.22,
+              },
+            ],
           },
-        ],
-      }];
+        },
+      };
 
       return testSubject(mockDataset, lighthouseResMock)
         .then(() => {
@@ -96,90 +94,20 @@ describe('Schemas', () => {
                 metricStartTime: 6500.22,
               },
             ],
-            timestamp: lighthouseResMock.generatedTime.getTime(),
-            website: lighthouseResMock.url,
+            timestamp: lighthouseResMock.fetchTime.getTime(),
+            website: lighthouseResMock.requestedUrl,
           });
       });
     });
 
-    it('when the audits do not contain assets blocking the fmp it will return an empty array for the assets', () => {
-      lighthouseResMock.reportCategories = [{
-        audits: [
-          {
-            id: 'user-timings',
-            result: {
-              extendedInfo: {
-                value: [],
-              },
-            },
-          },
-        ],
-      }];
-
-      return testSubject(mockDataset, lighthouseResMock)
-        .then(() => {
-          expect(mockDataset.table).toHaveBeenCalled();
-          expect(mockTable.insert).toHaveBeenCalled();
-          expect(mockTable.insert).toHaveBeenCalledWith({
-            build_id: 'none',
-            build_system: 'none',
-            metrics: [],
-            timestamp: lighthouseResMock.generatedTime.getTime(),
-            website: lighthouseResMock.url,
-          });
-        });
-    });
-
-    it('when the audits do not contain assets blocking the fmp it will return an empty array for the assets', () => {
-      lighthouseResMock.reportCategories = [{
-        audits: [
-          {
-            id: 'user-timings',
-            result: {
-              extendedInfo: {
-                value: [],
-              },
-            },
-          },
-        ],
-      }];
-
-      return testSubject(mockDataset, lighthouseResMock)
-        .then((result) => {
-          expect(mockDataset.table).toHaveBeenCalled();
-          expect(mockTable.insert).toHaveBeenCalled();
-          expect(mockTable.insert).toHaveBeenCalledWith({
-            build_id: 'none',
-            build_system: 'none',
-            metrics: [],
-            timestamp: lighthouseResMock.generatedTime.getTime(),
-            website: lighthouseResMock.url,
-          });
-          expect(result).toMatchObject({
-            user_timings: {
-              build_id: 'none',
-              build_system: 'none',
-              metrics: [],
-              timestamp: lighthouseResMock.generatedTime.getTime(),
-              website: lighthouseResMock.url,
-            }
-          });
-        });
-    });
-
     it('only returns the data without trying to store in the database when dataset is falsy', () => {
-      lighthouseResMock.reportCategories = [{
-        audits: [
-          {
-            id: 'user-timings',
-            result: {
-              extendedInfo: {
-                value: [],
-              },
-            },
+      lighthouseResMock.audits = {
+        'user-timings': {
+          details: {
+            items: [],
           },
-        ],
-      }];
+        },
+      }
 
       return testSubject(false, lighthouseResMock)
         .then((result) => {
@@ -188,16 +116,16 @@ describe('Schemas', () => {
             build_id: 'none',
             build_system: 'none',
             metrics: [],
-            timestamp: lighthouseResMock.generatedTime.getTime(),
-            website: lighthouseResMock.url,
+            timestamp: lighthouseResMock.fetchTime.getTime(),
+            website: lighthouseResMock.requestedUrl,
           });
           expect(result).toMatchObject({
             user_timings: {
               build_id: 'none',
               build_system: 'none',
               metrics: [],
-              timestamp: lighthouseResMock.generatedTime.getTime(),
-              website: lighthouseResMock.url,
+              timestamp: lighthouseResMock.fetchTime.getTime(),
+              website: lighthouseResMock.requestedUrl,
             }
           });
         });

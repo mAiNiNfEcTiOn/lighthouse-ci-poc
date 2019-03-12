@@ -19,7 +19,7 @@ const schema = [ // eslint-disable-line
   },
   {
     "mode": "REQUIRED",
-    "name": "potentialSavingsInKb",
+    "name": "potentialSavingsInBytes",
     "type": "FLOAT"
   },
   {
@@ -59,6 +59,11 @@ const schema = [ // eslint-disable-line
       },
       {
         "mode": "REQUIRED",
+        "name": "wastedPercent",
+        "type": "INTEGER"
+      },
+      {
+        "mode": "REQUIRED",
         "name": "requestStartTime",
         "type": "FLOAT"
       }
@@ -73,67 +78,52 @@ const schema = [ // eslint-disable-line
  * @param {Array} imagesList
  * @returns {Array}
  */
-function processImagesList(imagesList) {
-  if (imagesList && imagesList.length) {
-    return imagesList.map((image) => {
-      const { requestStartTime, totalBytes, url, wastedBytes, wastedMs } = image;
-      return {
-        requestStartTime,
-        totalBytes,
-        url,
-        wastedBytes,
-        wastedMs: parseInt(wastedMs.replace(',', ''), 10),
-      };
-    });
-  }
-
-  return [];
+function processImagesList(imagesList = []) {
+  return imagesList.map((image) => {
+    const { requestStartTime, totalBytes, url, wastedBytes, wastedMs, wastedPercent } = image;
+    return {
+      requestStartTime,
+      totalBytes,
+      url,
+      wastedBytes,
+      wastedMs,
+      wastedPercent,
+    };
+  });
 }
 
 module.exports = function save(dataset, lighthouseRes) {
-  logBasicInfo('Gathering offscreen-images %s', lighthouseRes.url);
+  logBasicInfo('Gathering offscreen-images %s', lighthouseRes.requestedUrl);
 
-  const timestamp = new Date(lighthouseRes.generatedTime).getTime();
+  const timestamp = new Date(lighthouseRes.fetchTime).getTime();
 
-  const { audits } = lighthouseRes.reportCategories[0];
-  if (!(audits && audits.length)) {
-    return Promise.reject(new Error(`There were no "audits" in Lighthouse's reportCategories[0]`));
+  const { audits } = lighthouseRes;
+  if (!audits) {
+    return Promise.reject(new Error(`There were no "audits" in Lighthouse's response`));
   }
 
-  const offscreenImagesAudit = audits.find(audit => (audit.id === 'offscreen-images'));
-  const offscreenImagesValue = (
-    offscreenImagesAudit &&
-    offscreenImagesAudit.result &&
-    offscreenImagesAudit.result.extendedInfo &&
-    offscreenImagesAudit.result.extendedInfo.value
-  );
-  const offscreenImagesResults = offscreenImagesValue && offscreenImagesValue.results;
+  const offscreenImagesAudit = audits['offscreen-images'];
 
-  const potentialSavingsInKb = offscreenImagesValue && offscreenImagesValue.wastedKb
-    ? offscreenImagesValue.wastedKb
-    : 0;
-  const potentialSavingsInMs = offscreenImagesValue && offscreenImagesValue.wastedMs
-    ? offscreenImagesValue.wastedMs
-    : 0;
+  const potentialSavingsInBytes = offscreenImagesAudit.details.overallSavingsBytes;
+  const potentialSavingsInMs = offscreenImagesAudit.details.overallSavingsMs;
 
-  const images = processImagesList(offscreenImagesResults);
+  const images = processImagesList(offscreenImagesAudit.details.items);
 
   const data = {
     build_id: process.env.BUILD_ID || 'none',
     build_system: process.env.BUILD_SYSTEM || 'none',
     images,
-    potentialSavingsInKb,
+    potentialSavingsInBytes,
     potentialSavingsInMs,
     timestamp,
-    website: lighthouseRes.url,
+    website: lighthouseRes.requestedUrl,
   };
 
   logExtInfo(data);
 
-  logBasicInfo('Saving offscreen-images data from %s to BigQuery', lighthouseRes.url);
-
   const returnData = { offscreen_images: data };
   if (dataset) {
+    logBasicInfo('Saving offscreen-images data from %s to BigQuery', lighthouseRes.requestedUrl);
     return dataset
       .table('offscreen_images')
       .insert(data)

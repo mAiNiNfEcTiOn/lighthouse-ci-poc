@@ -8,9 +8,8 @@ describe('Schemas', () => {
     const mockTable = {};
     const mockDataset = {};
     const lighthouseResMock = {
-      generatedTime: new Date(2010, 0, 1, 0, 0 ,0),
-      reportCategories: [{}],
-      url: 'http://www.fake.dom',
+      fetchTime: new Date(2010, 0, 1, 0, 0 ,0),
+      requestedUrl: 'http://www.fake.dom',
     };
 
     beforeEach(() => {
@@ -24,15 +23,21 @@ describe('Schemas', () => {
       return testSubject(mockDataset, lighthouseResMock)
         .catch((err) => {
           expect(err).toBeInstanceOf(Error);
-          expect(err.message).toBe(`There were no "audits" in Lighthouse's reportCategories[0]`);
+          expect(err.message).toBe(`There were no "audits" in Lighthouse's response`);
           expect(mockDataset.table).not.toHaveBeenCalled();
         });
     });
 
     it('attempts to insert a record on BigQuery with values of 0 and an empty array when the right audits are not there', () => {
-      lighthouseResMock.reportCategories = [{
-        audits: [{ id: 'fakeAudit' }],
-      }];
+      lighthouseResMock.audits = {
+        'offscreen-images': {
+          details: {
+            items: [],
+            overallSavingsMs: 0,
+            overallSavingsBytes: 0
+          }
+        }
+      };
 
       return testSubject(mockDataset, lighthouseResMock)
         .then(() => {
@@ -42,46 +47,40 @@ describe('Schemas', () => {
             build_id: 'none',
             build_system: 'none',
             images: [],
-            potentialSavingsInKb: 0,
+            potentialSavingsInBytes: 0,
             potentialSavingsInMs: 0,
-            timestamp: lighthouseResMock.generatedTime.getTime(),
-            website: lighthouseResMock.url,
+            timestamp: lighthouseResMock.fetchTime.getTime(),
+            website: lighthouseResMock.requestedUrl,
           });
         });
     });
 
     it('attempts to insert a record on BigQuery with proper values extracted from the audits', () => {
-      lighthouseResMock.reportCategories = [{
-        audits: [
-          {
-            id: 'offscreen-images',
-            result: {
-              extendedInfo: {
-                value: {
-                  results: [
-                    {
-                      requestStartTime: 1234,
-                      totalBytes: 2345,
-                      url: 'http://www.fake.dom/assets/images/fakeImage.jpg',
-                      wastedBytes: 300.30,
-                      wastedMs: '1,200 ms',
-                    },
-                    {
-                      requestStartTime: 2346,
-                      totalBytes: 34567,
-                      url: 'http://www.fake.dom/assets/images/fakeImage.jpg',
-                      wastedBytes: 100.30,
-                      wastedMs: '2,200 ms',
-                    },
-                  ],
-                  wastedKb: 400.60,
-                  wastedMs: 3400
-                },
+      lighthouseResMock.audits = {
+        'offscreen-images': {
+          details: {
+            type: "opportunity",
+            items: [
+              {
+                "url": "http://www.fake.dom/assets/images/fakeImage.jpg",
+                "requestStartTime": 1234,
+                "totalBytes": 2345,
+                "wastedBytes": 300.30,
+                "wastedPercent": 100
               },
-            },
+              {
+                "url": "http://www.fake.dom/assets/images/fakeImage.jpg",
+                "requestStartTime": 2346,
+                "totalBytes": 34567,
+                "wastedBytes": 100.30,
+                "wastedPercent": 100
+              },
+            ],
+            "overallSavingsMs": 2550,
+            "overallSavingsBytes": 463325
           },
-        ],
-      }];
+        }
+      };
 
       return testSubject(mockDataset, lighthouseResMock)
         .then(() => {
@@ -96,82 +95,35 @@ describe('Schemas', () => {
                 totalBytes: 2345,
                 url: 'http://www.fake.dom/assets/images/fakeImage.jpg',
                 wastedBytes: 300.30,
-                wastedMs: 1200,
+                wastedPercent: 100,
               },
               {
                 requestStartTime: 2346,
                 totalBytes: 34567,
                 url: 'http://www.fake.dom/assets/images/fakeImage.jpg',
                 wastedBytes: 100.30,
-                wastedMs: 2200,
+                wastedPercent: 100,
               }
             ],
-            potentialSavingsInKb: 400.60,
-            potentialSavingsInMs: 3400,
-            timestamp: lighthouseResMock.generatedTime.getTime(),
-            website: lighthouseResMock.url,
+            potentialSavingsInBytes: 463325,
+            potentialSavingsInMs: 2550,
+            timestamp: lighthouseResMock.fetchTime.getTime(),
+            website: lighthouseResMock.requestedUrl,
           });
       });
     });
 
-    it('when the audits do not contain assets blocking the fmp it will return an empty array for the assets', () => {
-      lighthouseResMock.reportCategories = [{
-        audits: [
-          {
-            id: 'offscreen-images',
-            result: {
-              extendedInfo: {
-                value: {
-                  results: [],
-                },
-              },
-            },
-          },
-        ],
-      }];
-
-      return testSubject(mockDataset, lighthouseResMock)
-        .then((result) => {
-          expect(mockDataset.table).toHaveBeenCalled();
-          expect(mockTable.insert).toHaveBeenCalled();
-          expect(mockTable.insert).toHaveBeenCalledWith({
-            build_id: 'none',
-            build_system: 'none',
-            images: [],
-            potentialSavingsInKb: 0,
-            potentialSavingsInMs: 0,
-            timestamp: lighthouseResMock.generatedTime.getTime(),
-            website: lighthouseResMock.url,
-          });
-          expect(result).toMatchObject({
-            offscreen_images: {
-              build_id: 'none',
-              build_system: 'none',
-              images: [],
-              potentialSavingsInKb: 0,
-              potentialSavingsInMs: 0,
-              timestamp: lighthouseResMock.generatedTime.getTime(),
-              website: lighthouseResMock.url,
-            }
-          });
-        });
-    });
-
     it('only returns the data without trying to store in the database when dataset is falsy', () => {
-      lighthouseResMock.reportCategories = [{
-        audits: [
-          {
-            id: 'offscreen-images',
-            result: {
-              extendedInfo: {
-                value: {
-                  results: [],
-                },
-              },
-            },
+      lighthouseResMock.audits = {
+        'offscreen-images': {
+          details: {
+            type: "opportunity",
+            items: [],
+            "overallSavingsMs": 0,
+            "overallSavingsBytes": 0
           },
-        ],
-      }];
+        }
+      };
 
       return testSubject(false, lighthouseResMock)
         .then((result) => {
@@ -182,18 +134,18 @@ describe('Schemas', () => {
             images: [],
             potentialSavingsInKb: 0,
             potentialSavingsInMs: 0,
-            timestamp: lighthouseResMock.generatedTime.getTime(),
-            website: lighthouseResMock.url,
+            timestamp: lighthouseResMock.fetchTime.getTime(),
+            website: lighthouseResMock.requestedUrl,
           });
           expect(result).toMatchObject({
             offscreen_images: {
               build_id: 'none',
               build_system: 'none',
               images: [],
-              potentialSavingsInKb: 0,
+              potentialSavingsInBytes: 0,
               potentialSavingsInMs: 0,
-              timestamp: lighthouseResMock.generatedTime.getTime(),
-              website: lighthouseResMock.url,
+              timestamp: lighthouseResMock.fetchTime.getTime(),
+              website: lighthouseResMock.requestedUrl,
             }
           });
         });
