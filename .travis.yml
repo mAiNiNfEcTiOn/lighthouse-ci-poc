@@ -10,7 +10,8 @@ before_install:
 - docker run -d --net host justinribeiro/chrome-headless
 - docker ps -a
 install:
-- npm install
+- yarn
+- yarn add -P @google-cloud/bigquery
 script:
 - npm run ci:lint
 - npm run ci:test
