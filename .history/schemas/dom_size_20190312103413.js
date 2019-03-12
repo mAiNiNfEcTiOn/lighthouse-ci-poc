@@ -1,5 +1,5 @@
-const logBasicInfo = require('debug')('user_timings:basic-info');
-const logExtInfo = require('debug')('user_timings:extended-info');
+const logBasicInfo = require('debug')('dom_size:basic-info');
+const logExtInfo = require('debug')('dom_size:extended-info');
 
 const schema = [ // eslint-disable-line
   {
@@ -19,6 +19,11 @@ const schema = [ // eslint-disable-line
   },
   {
     "mode": "REQUIRED",
+    "name": "totalDOMNodes",
+    "type": "INTEGER"
+  },
+  {
+    "mode": "REQUIRED",
     "name": "timestamp",
     "type": "INTEGER"
   },
@@ -29,23 +34,23 @@ const schema = [ // eslint-disable-line
     "fields": [
       {
         "mode": "REQUIRED",
-        "name": "metricDuration",
-        "type": "FLOAT"
-      },
-      {
-        "mode": "REQUIRED",
-        "name": "metricEndTime",
-        "type": "FLOAT"
-      },
-      {
-        "mode": "REQUIRED",
         "name": "metricName",
         "type": "STRING"
       },
       {
         "mode": "REQUIRED",
-        "name": "metricStartTime",
-        "type": "FLOAT"
+        "name": "metricSnippet",
+        "type": "STRING"
+      },
+      {
+        "mode": "REQUIRED",
+        "name": "metricTarget",
+        "type": "INTEGER"
+      },
+      {
+        "mode": "REQUIRED",
+        "name": "metricValue",
+        "type": "INTEGER"
       }
     ]
   }
@@ -61,13 +66,17 @@ const schema = [ // eslint-disable-line
 function processMetricsList(metricsList) {
   if (metricsList && metricsList.length) {
     return metricsList
-      .filter(metric => !metric.isMark)
+      .filter(metric => (metric.title !== 'Total DOM Nodes'))
       .map((metric) => {
+        const { snippet, target, title, value } = metric;
+        const metricValue = parseInt(value.replace(',', ''), 10);
+        const metricTarget = parseInt(target.substr(2).replace(',', ''), 10);
+
         return {
-          metricDuration: metric.duration,
-          metricEndTime: metric.endTime,
-          metricName: metric.name,
-          metricStartTime: metric.startTime,
+          metricName: title,
+          metricSnippet: snippet,
+          metricTarget,
+          metricValue,
         };
       });
   }
@@ -76,7 +85,7 @@ function processMetricsList(metricsList) {
 }
 
 module.exports = function save(dataset, lighthouseRes) {
-  logBasicInfo('Gathering User Timing metrics from %s', lighthouseRes.url);
+  logBasicInfo('Gathering DOM Size data from %s', lighthouseRes.url);
 
   const timestamp = new Date(lighthouseRes.generatedTime).getTime();
 
@@ -85,35 +94,38 @@ module.exports = function save(dataset, lighthouseRes) {
     return Promise.reject(new Error(`There were no "audits" in Lighthouse's reportCategories[0]`));
   }
 
-  const userTimingsAudit = audits.find(audit => (audit.id === 'user-timings'));
-  const userTimingsValue = (
-    userTimingsAudit &&
-    userTimingsAudit.result &&
-    userTimingsAudit.result.extendedInfo &&
-    userTimingsAudit.result.extendedInfo.value
+  const domSizeAudit = audits.find(audit => (audit.id === 'dom-size'));
+  const domSizeResult = domSizeAudit && domSizeAudit.result;
+  const domSizeExtInfoValue = (
+    domSizeResult &&
+    domSizeResult.extendedInfo &&
+    domSizeResult.extendedInfo.value
   );
 
-  const metrics = processMetricsList(userTimingsValue);
+  const totalDOMNodes = domSizeResult && domSizeResult.rawValue ? domSizeResult.rawValue : 0;
+
+  const metrics = processMetricsList(domSizeExtInfoValue);
 
   const data = {
     build_id: process.env.BUILD_ID || 'none',
     build_system: process.env.BUILD_SYSTEM || 'none',
     metrics,
     timestamp,
+    totalDOMNodes,
     website: lighthouseRes.url,
   };
 
   logExtInfo(data);
 
-  logBasicInfo('Saving User Timing metrics from %s to BigQuery', lighthouseRes.url);
+  logBasicInfo('Saving DOM Size data from %s to BigQuery', lighthouseRes.url);
 
-  const returnData = { user_timings: data };
+  const returnData = { dom_size: data };
   if (dataset) {
     return dataset
-      .table('user_timings')
+      .table('dom_size')
       .insert(data)
       .then(() => returnData);
   }
 
-  return Promise.resolve(returnData);
+  return returnData;
 };

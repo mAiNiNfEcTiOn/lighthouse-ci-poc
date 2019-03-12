@@ -106,14 +106,7 @@ module.exports = function save(dataset, lighthouseRes) {
   logExtInfo(data);
 
   logBasicInfo('Saving User Timing metrics from %s to BigQuery', lighthouseRes.url);
-
-  const returnData = { user_timings: data };
-  if (dataset) {
-    return dataset
-      .table('user_timings')
-      .insert(data)
-      .then(() => returnData);
-  }
-
-  return Promise.resolve(returnData);
+  return dataset
+    .table('user_timings')
+    .insert(data);
 };

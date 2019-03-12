@@ -2,7 +2,7 @@
   "collectCoverage": true,
   "collectCoverageFrom": [
     "schemas/*.js",
-    "!index.js"
+    "index.js"
   ],
   "coverageThreshold": {
     "global": {

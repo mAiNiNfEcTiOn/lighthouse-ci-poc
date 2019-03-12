@@ -126,41 +126,5 @@ describe('Schemas', () => {
           });
         });
     });
-
-    it('only returns the data without trying to store in the database when dataset is falsy', () => {
-      lighthouseResMock.reportCategories = [{
-        audits: [
-          {
-            id: 'screenshot-thumbnails',
-            result: {
-              details: {
-                items: [],
-              },
-            },
-          },
-        ],
-      }];
-
-      return testSubject(false, lighthouseResMock)
-        .then((result) => {
-          expect(mockTable.insert).not.toHaveBeenCalled();
-          expect(mockTable.insert).not.toHaveBeenCalledWith({
-            build_id: 'none',
-            build_system: 'none',
-            screenshots: [],
-            timestamp: lighthouseResMock.generatedTime.getTime(),
-            website: lighthouseResMock.url,
-          });
-          expect(result).toMatchObject({
-            filmstrip: {
-              build_id: 'none',
-              build_system: 'none',
-              screenshots: [],
-              timestamp: lighthouseResMock.generatedTime.getTime(),
-              website: lighthouseResMock.url,
-            }
-          });
-        });
-    });
   });
 });

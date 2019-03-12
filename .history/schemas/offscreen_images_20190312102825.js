@@ -131,14 +131,7 @@ module.exports = function save(dataset, lighthouseRes) {
   logExtInfo(data);
 
   logBasicInfo('Saving offscreen-images data from %s to BigQuery', lighthouseRes.url);
-
-  const returnData = { offscreen_images: data };
-  if (dataset) {
-    return dataset
-      .table('offscreen_images')
-      .insert(data)
-      .then(() => returnData);
-  }
-
-  return Promise.resolve(returnData);
+  return dataset
+    .table('offscreen_images')
+    .insert(data);
 };

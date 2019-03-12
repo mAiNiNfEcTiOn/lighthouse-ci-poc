@@ -80,14 +80,7 @@ module.exports = function save(dataset, lighthouseRes) {
   logExtInfo(dataObj);
 
   logBasicInfo('Saving the filmstrip of %s loading process to BigQuery', lighthouseRes.url);
-
-  const returnData = { filmstrip: dataObj };
-  if (dataset) {
-    return dataset
-      .table('filmstrip')
-      .insert(dataObj)
-      .then(() => returnData);
-  }
-
-  return Promise.resolve(returnData);
+  return dataset
+    .table('filmstrip')
+    .insert(dataObj);
 };

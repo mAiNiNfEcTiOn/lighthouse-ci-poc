@@ -1,10 +1,10 @@
 /**
- * This file tests the schemas/filmstrip.js
+ * This file tests the schemas/offscreen_images.js
  */
-const testSubject = require('../../schemas/filmstrip');
+const testSubject = require('../../schemas/offscreen_images');
 
 describe('Schemas', () => {
-  describe('Filmstrip', () => {
+  describe('Offscreen Images', () => {
     const mockTable = {};
     const mockDataset = {};
     const lighthouseResMock = {
@@ -41,7 +41,9 @@ describe('Schemas', () => {
           expect(mockTable.insert).toHaveBeenCalledWith({
             build_id: 'none',
             build_system: 'none',
-            screenshots: [],
+            images: [],
+            potentialSavingsInKb: 0,
+            potentialSavingsInMs: 0,
             timestamp: lighthouseResMock.generatedTime.getTime(),
             website: lighthouseResMock.url,
           });
@@ -52,13 +54,29 @@ describe('Schemas', () => {
       lighthouseResMock.reportCategories = [{
         audits: [
           {
-            id: 'screenshot-thumbnails',
+            id: 'offscreen-images',
             result: {
-              details: {
-                items: [
-                  { data: 'fakeBase64Image', timing: 123123213 },
-                  { data: 'fakeBase64Image2', timing: 123123214 },
-                ],
+              extendedInfo: {
+                value: {
+                  results: [
+                    {
+                      requestStartTime: 1234,
+                      totalBytes: 2345,
+                      url: 'http://www.fake.dom/assets/images/fakeImage.jpg',
+                      wastedBytes: 300.30,
+                      wastedMs: '1,200 ms',
+                    },
+                    {
+                      requestStartTime: 2346,
+                      totalBytes: 34567,
+                      url: 'http://www.fake.dom/assets/images/fakeImage.jpg',
+                      wastedBytes: 100.30,
+                      wastedMs: '2,200 ms',
+                    },
+                  ],
+                  wastedKb: 400.60,
+                  wastedMs: 3400
+                },
               },
             },
           },
@@ -72,18 +90,24 @@ describe('Schemas', () => {
           expect(mockTable.insert).toHaveBeenCalledWith({
             build_id: 'none',
             build_system: 'none',
-            screenshots: [
+            images: [
               {
-                data: 'fakeBase64Image',
-                timing: 123123213,
-                timestamp: lighthouseResMock.generatedTime.getTime(),
+                requestStartTime: 1234,
+                totalBytes: 2345,
+                url: 'http://www.fake.dom/assets/images/fakeImage.jpg',
+                wastedBytes: 300.30,
+                wastedMs: 1200,
               },
               {
-                data: 'fakeBase64Image2',
-                timing: 123123214,
-                timestamp: lighthouseResMock.generatedTime.getTime(),
-              },
+                requestStartTime: 2346,
+                totalBytes: 34567,
+                url: 'http://www.fake.dom/assets/images/fakeImage.jpg',
+                wastedBytes: 100.30,
+                wastedMs: 2200,
+              }
             ],
+            potentialSavingsInKb: 400.60,
+            potentialSavingsInMs: 3400,
             timestamp: lighthouseResMock.generatedTime.getTime(),
             website: lighthouseResMock.url,
           });
@@ -94,10 +118,12 @@ describe('Schemas', () => {
       lighthouseResMock.reportCategories = [{
         audits: [
           {
-            id: 'screenshot-thumbnails',
+            id: 'offscreen-images',
             result: {
-              details: {
-                items: [],
+              extendedInfo: {
+                value: {
+                  results: [],
+                },
               },
             },
           },
@@ -105,60 +131,17 @@ describe('Schemas', () => {
       }];
 
       return testSubject(mockDataset, lighthouseResMock)
-        .then((result) => {
+        .then(() => {
           expect(mockDataset.table).toHaveBeenCalled();
           expect(mockTable.insert).toHaveBeenCalled();
           expect(mockTable.insert).toHaveBeenCalledWith({
             build_id: 'none',
             build_system: 'none',
-            screenshots: [],
+            images: [],
+            potentialSavingsInKb: 0,
+            potentialSavingsInMs: 0,
             timestamp: lighthouseResMock.generatedTime.getTime(),
             website: lighthouseResMock.url,
-          });
-          expect(result).toMatchObject({
-            filmstrip: {
-              build_id: 'none',
-              build_system: 'none',
-              screenshots: [],
-              timestamp: lighthouseResMock.generatedTime.getTime(),
-              website: lighthouseResMock.url,
-            }
-          });
-        });
-    });
-
-    it('only returns the data without trying to store in the database when dataset is falsy', () => {
-      lighthouseResMock.reportCategories = [{
-        audits: [
-          {
-            id: 'screenshot-thumbnails',
-            result: {
-              details: {
-                items: [],
-              },
-            },
-          },
-        ],
-      }];
-
-      return testSubject(false, lighthouseResMock)
-        .then((result) => {
-          expect(mockTable.insert).not.toHaveBeenCalled();
-          expect(mockTable.insert).not.toHaveBeenCalledWith({
-            build_id: 'none',
-            build_system: 'none',
-            screenshots: [],
-            timestamp: lighthouseResMock.generatedTime.getTime(),
-            website: lighthouseResMock.url,
-          });
-          expect(result).toMatchObject({
-            filmstrip: {
-              build_id: 'none',
-              build_system: 'none',
-              screenshots: [],
-              timestamp: lighthouseResMock.generatedTime.getTime(),
-              website: lighthouseResMock.url,
-            }
           });
         });
     });

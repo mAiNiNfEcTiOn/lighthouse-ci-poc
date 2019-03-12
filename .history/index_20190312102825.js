@@ -64,6 +64,10 @@ self.setImmediate = (callback, ...argsForCallback) => {
  * @return {Promise} Returns a Promise after all schemas' functions finish processing.
  */
 function storeMetrics(lighthouseRes) {
+  if (!BIGQUERY_PROJECT_ID) {
+    return Promise.resolve();
+  }
+
   if (!(('generatedTime' in lighthouseRes) && lighthouseRes.generatedTime)) {
     return Promise.reject(new Error(`There was no "generatedTime" in Lighthouse's response`));
   }

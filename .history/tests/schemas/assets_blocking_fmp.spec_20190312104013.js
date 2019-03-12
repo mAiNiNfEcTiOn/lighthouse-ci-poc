@@ -1,10 +1,10 @@
 /**
- * This file tests the schemas/filmstrip.js
+ * This file tests the schemas/assets_blocking_fmp.js
  */
-const testSubject = require('../../schemas/filmstrip');
+const testSubject = require('../../schemas/assets_blocking_fmp');
 
 describe('Schemas', () => {
-  describe('Filmstrip', () => {
+  describe('Assets Blocking First Meaningful Paint', () => {
     const mockTable = {};
     const mockDataset = {};
     const lighthouseResMock = {
@@ -39,10 +39,14 @@ describe('Schemas', () => {
           expect(mockDataset.table).toHaveBeenCalled();
           expect(mockTable.insert).toHaveBeenCalled();
           expect(mockTable.insert).toHaveBeenCalledWith({
+            assets: [],
             build_id: 'none',
             build_system: 'none',
-            screenshots: [],
             timestamp: lighthouseResMock.generatedTime.getTime(),
+            totalScriptsKb: 0,
+            totalScriptsMs: 0,
+            totalLinksKb: 0,
+            totalLinksMs: 0,
             website: lighthouseResMock.url,
           });
         });
@@ -52,14 +56,30 @@ describe('Schemas', () => {
       lighthouseResMock.reportCategories = [{
         audits: [
           {
-            id: 'screenshot-thumbnails',
+            id: 'link-blocking-first-paint',
             result: {
-              details: {
-                items: [
-                  { data: 'fakeBase64Image', timing: 123123213 },
-                  { data: 'fakeBase64Image2', timing: 123123214 },
-                ],
+              extendedInfo: {
+                value: {
+                  results: [
+                    { url: 'http://www.fake.dom/assets/fake.css?v=123', totalKb: '300.30 Kb', totalMs: '6,497ms', },
+                    { url: 'http://www.fake.dom/assets/fake2.css', totalKb: '100.20 Kb', totalMs: '3,503ms', },
+                  ]
+                }
               },
+              rawValue: 1000,
+            },
+          },
+          {
+            id: 'script-blocking-first-paint',
+            result: {
+              extendedInfo: {
+                value: {
+                  results: [
+                    { url: 'http://www.fake.dom/assets/fake.js?v=6666', totalKb: '500.20 Kb', totalMs: '2,000ms', },
+                  ]
+                }
+              },
+              rawValue: 2000,
             },
           },
         ],
@@ -70,35 +90,46 @@ describe('Schemas', () => {
           expect(mockDataset.table).toHaveBeenCalled();
           expect(mockTable.insert).toHaveBeenCalled();
           expect(mockTable.insert).toHaveBeenCalledWith({
+            assets: [
+              { url: 'http://www.fake.dom/assets/fake.css?v=123', totalKb: 300.30, totalMs: 6497, type: 'css' },
+              { url: 'http://www.fake.dom/assets/fake2.css', totalKb: 100.20, totalMs: 3503, type: 'css' },
+              { url: 'http://www.fake.dom/assets/fake.js?v=6666', totalKb: 500.20, totalMs: 2000, type: 'js' },
+            ],
             build_id: 'none',
             build_system: 'none',
-            screenshots: [
-              {
-                data: 'fakeBase64Image',
-                timing: 123123213,
-                timestamp: lighthouseResMock.generatedTime.getTime(),
-              },
-              {
-                data: 'fakeBase64Image2',
-                timing: 123123214,
-                timestamp: lighthouseResMock.generatedTime.getTime(),
-              },
-            ],
             timestamp: lighthouseResMock.generatedTime.getTime(),
+            totalScriptsKb: 500.20,
+            totalScriptsMs: 2000,
+            totalLinksKb: 300.30,
+            totalLinksMs: 1000,
             website: lighthouseResMock.url,
           });
-      });
+        });
     });
 
     it('when the audits do not contain assets blocking the fmp it will return an empty array for the assets', () => {
       lighthouseResMock.reportCategories = [{
         audits: [
           {
-            id: 'screenshot-thumbnails',
+            id: 'link-blocking-first-paint',
             result: {
-              details: {
-                items: [],
+              extendedInfo: {
+                value: {
+                  results: []
+                }
               },
+              rawValue: 0,
+            },
+          },
+          {
+            id: 'script-blocking-first-paint',
+            result: {
+              extendedInfo: {
+                value: {
+                  results: []
+                }
+              },
+              rawValue: 0,
             },
           },
         ],
@@ -109,54 +140,27 @@ describe('Schemas', () => {
           expect(mockDataset.table).toHaveBeenCalled();
           expect(mockTable.insert).toHaveBeenCalled();
           expect(mockTable.insert).toHaveBeenCalledWith({
+            assets: [],
             build_id: 'none',
             build_system: 'none',
-            screenshots: [],
             timestamp: lighthouseResMock.generatedTime.getTime(),
+            totalScriptsKb: 0,
+            totalScriptsMs: 0,
+            totalLinksKb: 0,
+            totalLinksMs: 0,
             website: lighthouseResMock.url,
           });
-          expect(result).toMatchObject({
-            filmstrip: {
+
+          expect(result).toEqual({
+            assets_blocking_fmp: {
+              assets: [],
               build_id: 'none',
               build_system: 'none',
-              screenshots: [],
               timestamp: lighthouseResMock.generatedTime.getTime(),
-              website: lighthouseResMock.url,
-            }
-          });
-        });
-    });
-
-    it('only returns the data without trying to store in the database when dataset is falsy', () => {
-      lighthouseResMock.reportCategories = [{
-        audits: [
-          {
-            id: 'screenshot-thumbnails',
-            result: {
-              details: {
-                items: [],
-              },
-            },
-          },
-        ],
-      }];
-
-      return testSubject(false, lighthouseResMock)
-        .then((result) => {
-          expect(mockTable.insert).not.toHaveBeenCalled();
-          expect(mockTable.insert).not.toHaveBeenCalledWith({
-            build_id: 'none',
-            build_system: 'none',
-            screenshots: [],
-            timestamp: lighthouseResMock.generatedTime.getTime(),
-            website: lighthouseResMock.url,
-          });
-          expect(result).toMatchObject({
-            filmstrip: {
-              build_id: 'none',
-              build_system: 'none',
-              screenshots: [],
-              timestamp: lighthouseResMock.generatedTime.getTime(),
+              totalScriptsKb: 0,
+              totalScriptsMs: 0,
+              totalLinksKb: 0,
+              totalLinksMs: 0,
               website: lighthouseResMock.url,
             }
           });

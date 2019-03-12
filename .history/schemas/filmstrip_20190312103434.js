@@ -81,13 +81,13 @@ module.exports = function save(dataset, lighthouseRes) {
 
   logBasicInfo('Saving the filmstrip of %s loading process to BigQuery', lighthouseRes.url);
 
-  const returnData = { filmstrip: dataObj };
+  const returnData = { filmstrip: data };
   if (dataset) {
     return dataset
       .table('filmstrip')
-      .insert(dataObj)
+      .insert(data)
       .then(() => returnData);
   }
 
-  return Promise.resolve(returnData);
+  return returnData;
 };

@@ -94,14 +94,7 @@ module.exports = function save(dataset, lighthouseRes) {
   logExtInfo(data);
 
   logBasicInfo('Saving main metrics from %s to BigQuery', lighthouseRes.url);
-
-  const returnData = { main_metrics: data };
-  if (dataset) {
-    return dataset
-      .table('main_metrics')
-      .insert(data)
-      .then(() => returnData);
-  }
-
-  return Promise.resolve(returnData);
+  return dataset
+    .table('main_metrics')
+    .insert(data);
 };

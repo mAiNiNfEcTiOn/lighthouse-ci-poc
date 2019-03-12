@@ -1,10 +1,10 @@
 /**
- * This file tests the schemas/filmstrip.js
+ * This file tests the schemas/dom_size.js
  */
-const testSubject = require('../../schemas/filmstrip');
+const testSubject = require('../../schemas/dom_size');
 
 describe('Schemas', () => {
-  describe('Filmstrip', () => {
+  describe('DOM Size', () => {
     const mockTable = {};
     const mockDataset = {};
     const lighthouseResMock = {
@@ -41,8 +41,9 @@ describe('Schemas', () => {
           expect(mockTable.insert).toHaveBeenCalledWith({
             build_id: 'none',
             build_system: 'none',
-            screenshots: [],
+            metrics: [],
             timestamp: lighthouseResMock.generatedTime.getTime(),
+            totalDOMNodes: 0,
             website: lighthouseResMock.url,
           });
         });
@@ -52,14 +53,15 @@ describe('Schemas', () => {
       lighthouseResMock.reportCategories = [{
         audits: [
           {
-            id: 'screenshot-thumbnails',
+            id: 'dom-size',
             result: {
-              details: {
-                items: [
-                  { data: 'fakeBase64Image', timing: 123123213 },
-                  { data: 'fakeBase64Image2', timing: 123123214 },
+              extendedInfo: {
+                value: [
+                  { snippet: 'fakeSnippet', target: '< 3,500', title: 'fakeTitle', value: '2,000 nodes' },
+                  { snippet: 'fakeSnippet2', target: '< 3,500', title: 'fakeTitle2', value: '1,000 nodes' },
                 ],
               },
+              rawValue: 3000,
             },
           },
         ],
@@ -72,19 +74,22 @@ describe('Schemas', () => {
           expect(mockTable.insert).toHaveBeenCalledWith({
             build_id: 'none',
             build_system: 'none',
-            screenshots: [
+            metrics: [
               {
-                data: 'fakeBase64Image',
-                timing: 123123213,
-                timestamp: lighthouseResMock.generatedTime.getTime(),
+                metricName: 'fakeTitle',
+                metricSnippet: 'fakeSnippet',
+                metricTarget: 3500,
+                metricValue: 2000
               },
               {
-                data: 'fakeBase64Image2',
-                timing: 123123214,
-                timestamp: lighthouseResMock.generatedTime.getTime(),
+                metricName: 'fakeTitle2',
+                metricSnippet: 'fakeSnippet2',
+                metricTarget: 3500,
+                metricValue: 1000,
               },
             ],
             timestamp: lighthouseResMock.generatedTime.getTime(),
+            totalDOMNodes: 3000,
             website: lighthouseResMock.url,
           });
       });
@@ -94,11 +99,12 @@ describe('Schemas', () => {
       lighthouseResMock.reportCategories = [{
         audits: [
           {
-            id: 'screenshot-thumbnails',
+            id: 'dom-size',
             result: {
-              details: {
-                items: [],
+              extendedInfo: {
+                value: [],
               },
+              rawValue: 0,
             },
           },
         ],
@@ -111,19 +117,22 @@ describe('Schemas', () => {
           expect(mockTable.insert).toHaveBeenCalledWith({
             build_id: 'none',
             build_system: 'none',
-            screenshots: [],
+            metrics: [],
             timestamp: lighthouseResMock.generatedTime.getTime(),
+            totalDOMNodes: 0,
             website: lighthouseResMock.url,
           });
+
           expect(result).toMatchObject({
-            filmstrip: {
+            dom_size: {
               build_id: 'none',
               build_system: 'none',
-              screenshots: [],
+              metrics: [],
               timestamp: lighthouseResMock.generatedTime.getTime(),
+              totalDOMNodes: 0,
               website: lighthouseResMock.url,
             }
-          });
+          })
         });
     });
 
@@ -131,35 +140,40 @@ describe('Schemas', () => {
       lighthouseResMock.reportCategories = [{
         audits: [
           {
-            id: 'screenshot-thumbnails',
+            id: 'dom-size',
             result: {
-              details: {
-                items: [],
+              extendedInfo: {
+                value: [],
               },
+              rawValue: 0,
             },
           },
         ],
       }];
 
-      return testSubject(false, lighthouseResMock)
+      return testSubject(mockDataset, lighthouseResMock)
         .then((result) => {
-          expect(mockTable.insert).not.toHaveBeenCalled();
-          expect(mockTable.insert).not.toHaveBeenCalledWith({
+          expect(mockDataset.table).toHaveBeenCalled();
+          expect(mockTable.insert).toHaveBeenCalled();
+          expect(mockTable.insert).toHaveBeenCalledWith({
             build_id: 'none',
             build_system: 'none',
-            screenshots: [],
+            metrics: [],
             timestamp: lighthouseResMock.generatedTime.getTime(),
+            totalDOMNodes: 0,
             website: lighthouseResMock.url,
           });
+
           expect(result).toMatchObject({
-            filmstrip: {
+            dom_size: {
               build_id: 'none',
               build_system: 'none',
-              screenshots: [],
+              metrics: [],
               timestamp: lighthouseResMock.generatedTime.getTime(),
+              totalDOMNodes: 0,
               website: lighthouseResMock.url,
             }
-          });
+          })
         });
     });
   });

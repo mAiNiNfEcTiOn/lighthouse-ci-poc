@@ -163,14 +163,9 @@ module.exports = function save(dataset, lighthouseRes) {
 
   logBasicInfo('Saving assets blocking First Meaningful Paint from %s to BigQuery', lighthouseRes.url);
 
-  const returnData = { assets_blocking_fmp: data };
-
   if (dataset) {
-    return dataset
-      .table('assets_blocking_fmp')
-      .insert(data)
-      .then(() => returnData);
+    dataset.table('assets_blocking_fmp').insert(data);
   }
 
-  return Promise.resolve(returnData);
+  return { assets_blocking_fmp: data };
 };

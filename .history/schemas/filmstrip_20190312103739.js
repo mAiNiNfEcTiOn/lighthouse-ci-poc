@@ -89,5 +89,5 @@ module.exports = function save(dataset, lighthouseRes) {
       .then(() => returnData);
   }
 
-  return Promise.resolve(returnData);
+  return returnData;
 };
